@@ -16,7 +16,12 @@
 #ifndef EDIT2DMAZE_H_
 #define EDIT2DMAZE_H_
 
+#ifdef HOST_OS_MACOSX
 #include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
+
 #include <iostream>
 
 #include "Point2D.h"

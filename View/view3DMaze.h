@@ -16,7 +16,12 @@
 #ifndef VIEW3DMAZE_H_
 #define VIEW3DMAZE_H_
 
+#ifdef HOST_OS_MACOSX
 #include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

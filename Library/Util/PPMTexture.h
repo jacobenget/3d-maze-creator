@@ -14,7 +14,13 @@
 #define PPMTEXTURE_H
 
 #include <string>
+
+#ifdef HOST_OS_MACOSX
 #include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
+
 #include <iostream>
 #include <cstdlib>
 #include <fstream>

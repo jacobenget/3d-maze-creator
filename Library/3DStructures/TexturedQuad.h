@@ -11,7 +11,11 @@
 #ifndef TEXTUREDQUAD_H_
 #define TEXTUREDQUAD_H_
 
+#ifdef HOST_OS_MACOSX
 #include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
 
 #include "Quad.h"
 #include "Point2D.h"

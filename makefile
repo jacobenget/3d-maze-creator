@@ -1,11 +1,12 @@
 CC = g++
-CFLAGS = -Wall -O2
 
-#openGL flags for Mac OSX
+#Mac OSX flags
+CFLAGS = -Wall -O2 -DHOST_OS_MACOSX
 OPENGL_FLAGS = -framework GLUT -framework OpenGL
 
-#openGL flags for GNU/Linux
-#OPENGL_FLAGS = -I/usr/openwin/include -L/user/openwin/lib -lGL -lglut -lGLU -lXi -lXmu -lXext -lX11 -lm
+
+#GNU/Linux flags
+#CFLAGS = -Wall -O2 -DHOST_OS_LINUX
 #OPENGL_FLAGS = -I/usr/openwin/include -L/user/openwin/lib -lGL -lglut -lGLU -lm
 
 #defining some shorthand for folder names

@@ -12,7 +12,12 @@
 #define TRANSFORMATIONMATRIX_H_
 
 #include <math.h>
+
+#ifdef HOST_OS_MACOSX
 #include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
 
 class TransformationMatrix
 {	

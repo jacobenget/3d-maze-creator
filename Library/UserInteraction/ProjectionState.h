@@ -11,7 +11,11 @@
 #ifndef PROJECTIONSTATE_H_
 #define PROJECTIONSTATE_H_
 
+#ifdef HOST_OS_MACOSX
 #include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
 #include <math.h>
 
 #include "ConversionFunctions.h"
