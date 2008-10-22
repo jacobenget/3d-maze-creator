@@ -26,7 +26,7 @@ TL = $(LIB)/Util
 3DOBJECT = $(3DSOURCE:.cpp=.o)
 
 IOSOURCE = $(IO)/FileHandler.cpp $(IO)/WriteFile.cpp $(IO)/LoadFile.cpp
-IOHEADER = $(IOSOURCE:.cpp=.h) $(IO)/IOError.h $(IO)/Serializable.h $(IO)/UserWIshesToExitException.h
+IOHEADER = $(IOSOURCE:.cpp=.h) $(IO)/IOError.h $(IO)/Serializable.h $(IO)/UserWishesToExitException.h
 IOOBJECT = $(IOSOURCE:.cpp=.o)
 
 UISOURCE = $(UI)/ProjectionState.cpp $(UI)/TransformationMatrix.cpp $(UI)/TransformationState.cpp $(UI)/TransformationStateFP.cpp $(UI)/UserInteractionState.cpp $(UI)/UserInteractionStateFP.cpp
