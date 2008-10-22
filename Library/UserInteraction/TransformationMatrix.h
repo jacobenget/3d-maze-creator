@@ -18,7 +18,7 @@ class TransformationMatrix
 {	
 	public:
 		TransformationMatrix();
-		TransformationMatrix::TransformationMatrix( const TransformationMatrix & rhs );
+		TransformationMatrix( const TransformationMatrix & rhs );
 		
 		const TransformationMatrix & operator=( const TransformationMatrix & rhs );
 		const TransformationMatrix operator*( const TransformationMatrix & rhs ) const;
