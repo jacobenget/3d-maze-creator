@@ -9,7 +9,7 @@
    				 
    				 command line syntax:
    				 
-   				 convertMazeTo3D [ 2DMazeFileName ] [ 3DMazeFileName ] [ wallWidth ] [ wallHeight ]
+   				 convertMazeTo3D [ 2DMazeFileName [ 3DMazeFileName [ wallWidth [ wallHeight ] ] ] ]
 */
 
 

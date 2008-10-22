@@ -9,7 +9,7 @@
    				 
    				 command line syntax:
    				 
-   				 explore3DMaze [ 3DMazeFileName ] [ floorTexture.ppm ] [ wallTexture.ppm ]
+   				 explore3DMaze [ 3DMazeFileName [ floorTexture.ppm [ wallTexture.ppm ] ] ]
 */
 
 
