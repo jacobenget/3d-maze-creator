@@ -318,4 +318,3 @@ Vector2D Wall::getCollisionSurface( const LineSegment2D & line ) const throw( Wa
 	
 	return Vector2D( closestLine );
 }
-	
