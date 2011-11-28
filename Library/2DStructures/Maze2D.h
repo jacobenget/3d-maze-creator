@@ -11,12 +11,7 @@
 #define MAZE2D_H_
 
 #include <vector>
-
-#ifdef HOST_OS_MACOSX
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#include <QtOpenGL>
 
 #include "LineSegment2D.h"
 #include "Serializable.h"

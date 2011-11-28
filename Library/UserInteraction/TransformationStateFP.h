@@ -14,11 +14,7 @@
 #ifndef TRANSFORMATIONSTATEFP_H_
 #define TRANSFORMATIONSTATEFP_H_
 
-#ifdef HOST_OS_MACOSX
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#include <QtOpenGL>
 
 #include <math.h>
 #include <iostream>

@@ -12,11 +12,7 @@
 #ifndef REGISTERTEXTURE_H_
 #define REGISTERTEXTURE_H_
 
-#ifdef HOST_OS_MACOSX
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#include <QtOpenGL>
 
 #include "PPMTexture.h"
 

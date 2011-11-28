@@ -16,11 +16,7 @@
 #ifndef EDIT2DMAZE_H_
 #define EDIT2DMAZE_H_
 
-#ifdef HOST_OS_MACOSX
-#include <GLUT/glut.h>
-#else
-#include <GL/glut.h>
-#endif
+#include <QtOpenGL>
 
 #include <iostream>
 
@@ -29,61 +25,54 @@
 #include "Maze2D.h"
 #include "FileHandler.h" 
 #include "LoadFile.h"  
-#include "WriteFile.h" 
+#include "WriteFile.h"
 
-const std::string window_title = "Edit/Create your own Maze";
+class EditWidget : public QGLWidget
+{
+	Q_OBJECT
+
+	public:
+		EditWidget( QWidget * parent = NULL );
+
+	protected:
+		virtual void initializeGL();
+		virtual void resizeGL( int width, int height );
+		virtual void paintGL();
+		virtual void mousePressEvent( QMouseEvent * event );
+		virtual void mouseMoveEvent( QMouseEvent * event );
+		virtual void keyPressEvent( QKeyEvent * event );
+		virtual void contextMenuEvent( QContextMenuEvent * event );
+
+	public slots:
+		void openMaze();
+		void setMazeToDefault();
+		void saveMaze();
+
+	private:
+		Point2D convertPointToCoordinatesSystem( int x, int y );
+
+		Maze2D maze;
+		Point2D lastPointClicked;
+		Point2D mouseCursor;
+		bool drawLineToCursor;
+		QString maze2DfileName;
+		double lineWidth;
+
+		static const QColor walls_color;
+		static const QColor bkgrd_color;
+		static const QColor inside_maze_color;
+		static const QColor figure_color;
+
+		static const float maxMazeToAllScreenRatio;
+
+		static const QString mazeFileExtension;
+		static const QString default_maze_file_name;
+};
 
 const  int exit_success = 0;
 
-const int initial_window_width = 600;
-const int initial_window_height = 600;
-const int initial_window_x_position = 300;
-const int initial_window_y_position = 200;
-
-const double maze_width = ( 3.0 / 4.0 ) * initial_window_width;
-const double maze_height = ( 3.0 / 4.0 ) * initial_window_height;
-
-const double walls_color_r = 0.1;
-const double walls_color_g = 0.1;
-const double walls_color_b = 0.1;
-
-const double bkgrd_color_r = 0.40;
-const double bkgrd_color_g = 0.40;
-const double bkgrd_color_b = 0.40;
-
-const double inside_maze_color_r = 0.8;
-const double inside_maze_color_g = 0.8;
-const double inside_maze_color_b = 0.8;
-
-const double figure_color_r = 0.70;
-const double figure_color_g = 0.30;
-const double figure_color_b = 0.30;
-
-const char quit_button = 'q';
-const char lift_up_pen_button = ' ';
-
-const std::string menu_save_option_label = "Save Maze";
-const int menu_save_option_number = 1;
-const std::string menu_saveAndQuit_option_label = "Save and Quit";
-const int menu_saveAndQuit_option_number = 2;
-const std::string menu_clear_option_label = "Clear Maze";
-const int menu_clear_option_number = 3;
-const std::string menu_quit_option_label = "Quit";
-const int menu_quit_option_number = 4;
-
-const std::string default_2D_maze_file_name = "SampleMazes/sampleMaze2D";
-
-void setMazeToDefault();
-Point2D convertPointToCoordinatesSystem( int x, int y );
-void renderScene();
-void shadeInsideOfMaze();
-void drawFigureIcon();
-void keyPressed( unsigned char key, int x, int y );
-void mouseButtonPressed( int button, int state, int x, int y );
-void mouseMoved( int x, int y );
-void windowChangedSize( int width, int height );
-void saveMaze();
-void menuCallback( int option_number );
+const Qt::Key quit_button = Qt::Key_Q;
+const Qt::Key lift_up_pen_button = Qt::Key_Space;
 
 
 #endif /*EDIT2DMAZE_H_*/

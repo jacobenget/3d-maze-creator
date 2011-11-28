@@ -12,6 +12,7 @@
 #define LineSegment2D_H_
 
 #include <iostream>
+#include <limits>
 
 #include "Point2D.h"
 #include "Serializable.h"
