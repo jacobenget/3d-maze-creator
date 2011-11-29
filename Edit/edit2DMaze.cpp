@@ -15,11 +15,15 @@
 #include <QtGui/QApplication>
 #include <assert.h>
 #include "edit2DMaze.h"
+#include "Maze3D.h"
 
 using namespace std;
 
 int main( int argc, char * argv[] ) {
 	QApplication application( argc, argv );
+
+	// set up a message handler
+	QErrorMessage::qtHandler();
 
 	QMainWindow window;
 	window.setWindowTitle( "Edit/Create your own Maze" );
@@ -28,14 +32,17 @@ int main( int argc, char * argv[] ) {
 	QAction * openMazeAction = new QAction( window.tr( "Open Maze..." ), &window );
 	QAction * saveAction = new QAction( window.tr( "Save Maze" ), &window );
 	QAction * resetMazeAction = new QAction( window.tr( "Clear Maze" ), &window );
+	QAction * convertMazeAction = new QAction( window.tr( "Convert Maze To 3D" ), &window );
 	QAction * quitAction = new QAction( window.tr( "Quit" ), &window );
 	window.connect( openMazeAction, SIGNAL( triggered() ), &editWidget, SLOT( openMaze() ) );
 	window.connect( saveAction, SIGNAL( triggered() ), &editWidget, SLOT( saveMaze() ) );
 	window.connect( resetMazeAction, SIGNAL( triggered() ), &editWidget, SLOT( setMazeToDefault() ) );
+	window.connect( convertMazeAction, SIGNAL( triggered() ), &editWidget, SLOT( convertTo3D() ) );
 	window.connect( quitAction, SIGNAL( triggered() ), &application, SLOT( quit() ) );
 	editWidget.addAction( openMazeAction );
 	editWidget.addAction( saveAction );
 	editWidget.addAction( resetMazeAction );
+	editWidget.addAction( convertMazeAction );
 	editWidget.addAction( quitAction );
 
 	window.setCentralWidget( &editWidget );
@@ -296,6 +303,63 @@ void EditWidget::saveMaze()
 }
 
 
+/* for converting the 2-D maze into t a 3-D maze
+ * and writing this 3-D maze out to a file
+ */
+void EditWidget::convertTo3D()
+{
+	static const int default_wall_width = 10;
+	static const int default_wall_height = 50;
+
+	WidthHeightDialog getWidthAndHeightDialog( default_wall_width, default_wall_height, this );
+
+	if ( !getWidthAndHeightDialog.exec() ) {
+		return;
+	}
+
+	int selectedWallWidth = getWidthAndHeightDialog.getSelectedWidth();
+	int selectedWallHeight = getWidthAndHeightDialog.getSelectedHeight();
+
+	const double default_texture_size = 50.0;
+
+	//iterate through the lines in the 2D maze and create 3D walls out of them
+	//and add these walls to the 3D maze;
+	int numberOfLines = maze.numberOfLines();
+	Wall wall;
+
+	Maze3D toMaze3D;
+	for( int i = 0; i < numberOfLines; i++ )
+	{
+		wall.fitToLine( maze.getALine( i ), selectedWallWidth, selectedWallHeight, default_texture_size, default_texture_size );
+		toMaze3D.addAWall( wall );
+	}
+
+	//add the floor
+	Point3D bottomLeft( -( maze.getWidth() / 2.0 ), -( maze.getHeight() / 2.0 ), -selectedWallHeight / 2.0 );
+	Point3D topLeft( -( maze.getWidth() / 2.0 ), ( maze.getHeight() / 2.0 ), -selectedWallHeight / 2.0 );
+	Point3D topRight( ( maze.getWidth() / 2.0 ), ( maze.getHeight() / 2.0 ), -selectedWallHeight / 2.0 );
+	Point3D bottomRight( ( maze.getWidth() / 2.0 ), -( maze.getHeight() / 2.0 ), -selectedWallHeight / 2.0 );
+
+	Quad floor( bottomLeft, topLeft, topRight, bottomRight );
+	TexturedQuad tFloor( floor, default_texture_size, default_texture_size );
+
+	toMaze3D.setFloor( tFloor );
+
+	//try to write out the 3D maze file
+	try
+	{
+		QString threeDFileName = maze2DfileName;
+		threeDFileName.chop( threeDFileName.length() - threeDFileName.lastIndexOf( '.' ) );
+		WriteFile( threeDFileName.toStdString(), toMaze3D );
+	}
+	catch ( UserWishesToExitException & ue )
+	{
+		cout << "goodbye!";
+		exit( exit_success );
+	}
+}
+
+
 /* map a window coordinate point (relative to the top left of the screen)
  * to world coordinates
  */ 
@@ -390,3 +454,94 @@ Point2D EditWidget::convertPointToCoordinatesSystem( int x, int y )
 
 	return Point2D( worldspace[ 0 ], worldspace[ 1 ] );
 }
+
+/*  WidthHeightDialog::WidthHeightDialog
+ */
+WidthHeightDialog::WidthHeightDialog( int default_wall_width_, int default_wall_height_, QWidget * parent /*= NULL*/ ) :
+	QDialog( parent ),
+	default_wall_width( default_wall_width_ ),
+	default_wall_height( default_wall_height_ ),
+	widthLabel( NULL ),
+	widthEdit( NULL ),
+	heightLabel( NULL ),
+	heightEdit( NULL ),
+	okButton( NULL ),
+	cancelButton( NULL ),
+	gridLayout( NULL ),
+	horizontalLayout( NULL ),
+	verticalLayout( NULL )
+{
+	widthLabel = new QLabel( tr( "Wall width" ) );
+	widthEdit = new QLineEdit( QString( "%1" ).arg( default_wall_width ) );
+	heightLabel = new QLabel( tr( "Wall height" ) );
+	heightEdit = new QLineEdit( QString( "%1" ).arg( default_wall_height ) );
+
+	okButton = new QPushButton( tr( "OK" ) );
+	cancelButton = new QPushButton( tr( "Cancel" ) );
+
+	gridLayout = new QGridLayout;
+	horizontalLayout = new QHBoxLayout;
+	verticalLayout = new QVBoxLayout;
+
+	widthEdit->setValidator( new QIntValidator( 1, 2 * default_wall_width, widthEdit ) );
+	heightEdit->setValidator( new QIntValidator( 1, 2 * default_wall_height, heightEdit ) );
+
+	gridLayout->addWidget( widthLabel, 0, 0 );
+	gridLayout->addWidget( widthEdit, 0, 1 );
+	gridLayout->addWidget( heightLabel, 1, 0 );
+	gridLayout->addWidget( heightEdit, 1, 1 );
+
+	okButton->setDefault( true );
+	okButton->setEnabled( false );
+
+	horizontalLayout->addStretch();
+	horizontalLayout->addWidget( okButton, 0, Qt::AlignRight );
+	horizontalLayout->addWidget( cancelButton, 0, Qt::AlignRight );
+
+	verticalLayout->addLayout( gridLayout );
+	verticalLayout->addStretch();
+	verticalLayout->addLayout( horizontalLayout );
+
+	setLayout( verticalLayout );
+
+	connect( widthEdit, SIGNAL( textChanged( const QString & ) ), this, SLOT( checkLineEdits() ) );
+	connect( heightEdit, SIGNAL( textChanged( const QString & ) ), this, SLOT( checkLineEdits() ) );
+	connect( okButton, SIGNAL( clicked() ), this, SLOT( accept() ) );
+	connect( cancelButton, SIGNAL( clicked() ), this, SLOT( reject() ) );
+
+	checkLineEdits();
+}
+
+/*  return the wall width
+ */
+int WidthHeightDialog::getSelectedWidth() {
+	if ( widthEdit != NULL ) {
+		return widthEdit->displayText().toInt();
+	} else {
+		return default_wall_width;
+	}
+}
+
+/*  return the wall height
+ */
+int WidthHeightDialog::getSelectedHeight() {
+	if ( heightEdit != NULL ) {
+		return heightEdit->displayText().toInt();
+	} else {
+		return default_wall_height;
+	}
+}
+
+/*  enable the 'OK' button, if it should be enabled
+ */
+void WidthHeightDialog::checkLineEdits()
+{
+	bool allInputOK = true;
+	QList< QLineEdit * > lineEditList = findChildren< QLineEdit * >();
+	foreach ( QLineEdit * lineEdit, lineEditList ) {
+		allInputOK &= !lineEdit->text().isEmpty();
+	}
+
+	okButton->setEnabled( allInputOK );
+}
+
