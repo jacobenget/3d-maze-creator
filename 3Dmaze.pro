@@ -5,6 +5,7 @@
 #-------------------------------------------------
 
 QT       += core gui opengl
+CONFIG   += warn_on
 
 TARGET = 3Dmaze
 TEMPLATE = app
