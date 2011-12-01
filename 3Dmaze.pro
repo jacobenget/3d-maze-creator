@@ -7,6 +7,12 @@
 QT       += core gui opengl
 CONFIG   += warn_on
 
+DESTDIR = build
+OBJECTS_DIR = build/.obj
+MOC_DIR = build/.moc
+RCC_DIR = build/.rcc
+UI_DIR = build/.ui
+
 TARGET = 3Dmaze
 TEMPLATE = app
 INCLUDEPATH += Library/2DStructures/ \
