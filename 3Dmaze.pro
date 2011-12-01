@@ -44,7 +44,9 @@ SOURCES +=\
     Library/Util/PPMTexture.cpp \
     Library/Util/FramesPerSecondController.cpp \
 	Library/Util/ConversionFunctions.cpp \
-    Edit/edit2DMaze.cpp
+    Edit/edit2DMaze.cpp \
+	View/view3DMaze.cpp \
+    main.cpp
 
 HEADERS  += \
     Library/2DStructures/Vector2D.h \
@@ -73,4 +75,5 @@ HEADERS  += \
     Library/Util/FramesPerSecondController.h \
     Library/Util/ConversionFunctions.h \
 	Library/Util/BoundsCheckingContainer.h \
-    Edit/edit2DMaze.h
+    Edit/edit2DMaze.h \
+	View/view3DMaze.h

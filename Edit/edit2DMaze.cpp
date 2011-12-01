@@ -12,45 +12,9 @@
    				 edit2DMaze [ 2DMazeFileName ]
 */
 
-#include <QtGui/QApplication>
 #include <assert.h>
 #include "edit2DMaze.h"
 #include "Maze3D.h"
-
-using namespace std;
-
-int main( int argc, char * argv[] ) {
-	QApplication application( argc, argv );
-
-	// set up a message handler
-	QErrorMessage::qtHandler();
-
-	QMainWindow window;
-	window.setWindowTitle( "Edit/Create your own Maze" );
-	EditWidget editWidget;
-
-	QAction * openMazeAction = new QAction( window.tr( "Open Maze..." ), &window );
-	QAction * saveAction = new QAction( window.tr( "Save Maze" ), &window );
-	QAction * resetMazeAction = new QAction( window.tr( "Clear Maze" ), &window );
-	QAction * convertMazeAction = new QAction( window.tr( "Convert Maze To 3D" ), &window );
-	QAction * quitAction = new QAction( window.tr( "Quit" ), &window );
-	window.connect( openMazeAction, SIGNAL( triggered() ), &editWidget, SLOT( openMaze() ) );
-	window.connect( saveAction, SIGNAL( triggered() ), &editWidget, SLOT( saveMaze() ) );
-	window.connect( resetMazeAction, SIGNAL( triggered() ), &editWidget, SLOT( setMazeToDefault() ) );
-	window.connect( convertMazeAction, SIGNAL( triggered() ), &editWidget, SLOT( convertTo3D() ) );
-	window.connect( quitAction, SIGNAL( triggered() ), &application, SLOT( quit() ) );
-	editWidget.addAction( openMazeAction );
-	editWidget.addAction( saveAction );
-	editWidget.addAction( resetMazeAction );
-	editWidget.addAction( convertMazeAction );
-	editWidget.addAction( quitAction );
-
-	window.setCentralWidget( &editWidget );
-	window.resize( 600, 600 );
-	window.show();
-
-	return application.exec();
-}
 
 const QColor EditWidget::walls_color( 26, 26, 26 );
 const QColor EditWidget::bkgrd_color( 102, 102, 102 );
@@ -60,6 +24,10 @@ const QColor EditWidget::figure_color( 178, 77, 77 );
 const float EditWidget::maxMazeToAllScreenRatio = 0.75f;
 const QString EditWidget::mazeFileExtension = "maze";
 const QString EditWidget::default_maze_file_name = "unnamed";
+
+const int exit_success = 0;
+const Qt::Key quit_button = Qt::Key_Q;
+const Qt::Key lift_up_pen_button = Qt::Key_Space;
 
 EditWidget::EditWidget( QWidget * parent /* = NULL */ ) :
 	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba ), parent ),
@@ -255,7 +223,7 @@ void EditWidget::openMaze()
 		}
 		catch ( UserWishesToExitException & ue )
 		{
-			cout << "goodbye";
+			std::cout << "goodbye";
 			exit( exit_success );
 		}
 	}
@@ -297,7 +265,7 @@ void EditWidget::saveMaze()
 	}
 	catch ( UserWishesToExitException & ue )
 	{
-		cout << "goodbye";
+		std::cout << "goodbye";
 		exit( exit_success );
 	}
 }
@@ -354,7 +322,7 @@ void EditWidget::convertTo3D()
 	}
 	catch ( UserWishesToExitException & ue )
 	{
-		cout << "goodbye!";
+		std::cout << "goodbye!";
 		exit( exit_success );
 	}
 }
@@ -429,6 +397,8 @@ Point2D EditWidget::convertPointToCoordinatesSystem( int x, int y )
 				return fabs( a - b ) < fabs( epsilon );
 			}
 	};
+
+	makeCurrent();
 
 	GLint viewport[ 4 ];
 	glGetIntegerv( GL_VIEWPORT, viewport );

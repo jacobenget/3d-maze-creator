@@ -20,8 +20,6 @@ class ProjectionState
 	public:
 		ProjectionState( GLdouble i_fovyAngle,
 						 GLdouble i_cameraZPosition,
-						 int i_widthOfScreen,
-						 int i_heightOfScreen,
 						 int i_zCoordFarClippingPlane,
 						 int i_cameraToNearClippingPlane,
 						 double i_fishEyeRatioChange,

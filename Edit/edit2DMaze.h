@@ -106,10 +106,5 @@ class WidthHeightDialog : public QDialog
 		QVBoxLayout * verticalLayout;
 };
 
-const  int exit_success = 0;
-
-const Qt::Key quit_button = Qt::Key_Q;
-const Qt::Key lift_up_pen_button = Qt::Key_Space;
-
 
 #endif /*EDIT2DMAZE_H_*/

@@ -15,81 +15,87 @@
 
 #include "view3DMaze.h"
 
-using namespace std;
+const QColor ViewWidget::bkgrnd_color( 204, 204, 242 );
+
+const double ViewWidget::max_x_translation = 450;
+const double ViewWidget::max_y_translation = 450;
+
+const double ViewWidget::max_scale = 6;
+const double ViewWidget::min_scale = 0.05;
+
+const double ViewWidget::rotation_increment = 5.0;
+const double ViewWidget::translation_increment = 6.0;
+const double ViewWidget::scale_multiplier = 1.1;
+
+const double ViewWidget::fovy_angle_ratio_change = 0.92;
+const double ViewWidget::initial_fovy_angle = 45.0;
+const double ViewWidget::initial_z_coord_of_camera = 1000.0;
+
+const QString ViewWidget::default_floor_texture_file_name = "../SampleTextures/brushed_metal3.ppm";
+const QString ViewWidget::default_walls_texture_file_name = "../SampleTextures/checker_mush.ppm";
+
+const int exit_success = 0;
+const Qt::Key quit_button = Qt::Key_Q;
+
+ViewWidget::ViewWidget( QWidget * parent /* = NULL */ ) :
+	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba | QGL::DepthBuffer ), parent ),
+	floorTextureNumber( 0 ),
+	wallsTextureNumber( 0 ),
+	stateOfProjection(	initial_fovy_angle,
+						initial_z_coord_of_camera,
+						z_value_of_far_clipping_plane,
+						distance_between_camera_and_near_clipping_plane,
+						fovy_angle_ratio_change,
+						min_z_coord_of_camera,
+						max_z_coord_of_camera ) {
+
+	stateOfTransformation.setUpXScale( min_scale, max_scale, 1 );
+	stateOfTransformation.setUpYScale( min_scale, max_scale, 1 );
+	stateOfTransformation.setUpZScale( min_scale, max_scale, 1 );
+	stateOfTransformation.setUpXTranslation( -max_x_translation, max_x_translation, 0 );
+	stateOfTransformation.setUpYTranslation( -max_y_translation, max_y_translation, 0 );
+	stateOfTransformation.setUpZTranslation( 0, 0, 0 );
+
+	setMouseTracking( true );	// so the widget can listen to mouse movement when a mouse button isn't down
+	setFocusPolicy( Qt::ClickFocus );	// so the widget can accept keyboard input
+	setContextMenuPolicy( Qt::ActionsContextMenu );	// so the widget can respond to context menu requests with it list of actions
+}
 
 
-int main( int argc, char** argv )
+void ViewWidget::initializeGL()
 {
-	glutInit( &argc,argv );
-	glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH );
-	glutInitWindowSize( initial_window_width, initial_window_height );
-	glutInitWindowPosition( initial_window_x_position, initial_window_y_position );
-	glutCreateWindow( window_title.c_str() );
-	glutKeyboardFunc( keyPressed );
-	
-	//whenever a mouse button is pressed do this:
-	glutMouseFunc( mouseButtonPressed );
-	
-	//whenever the mouse moves without a button pressed do this:
-	glutPassiveMotionFunc( mouseMoved );
-	
-	//whenever the mouse moves with a button pressed do this:
-	glutMotionFunc( mouseMoved );
-	
-	//set up the menu option
-	glutCreateMenu( menuCallback );
-	glutAddMenuEntry( "Reinitialize", 1 );
-	glutAttachMenu( GLUT_RIGHT_BUTTON );
-	
-	glutReshapeFunc( windowChangedSize );
-	glutDisplayFunc( renderScene );
-	
 	glEnable( GL_DEPTH_TEST );
-	
-	//try to initialize the rest of the environment
-	try
-	{
-		initEnvironment( argc, argv );
-	}
-	catch ( UserWishesToExitException & ue )
-	{
-		cout << "goodbye!";
-		return exit_success;
-	}
-  	
-	glutMainLoop();
-	
-	//we'll never really get here because glutMainLoop should never return.
-	//But just in case, we'll clean up our dynamic variables
-	ReleaseStaticVariables();
-	
-	return exit_success;
+
+	//register the walls texture
+	floorTextureNumber = loadAndRegisterTexture( default_floor_texture_file_name );
+
+	//register the walls texture
+	wallsTextureNumber = loadAndRegisterTexture( default_walls_texture_file_name );
 }
 
 
 /* draw the 3-D maze
  * ( all transformations are computed outside (prior to) this function )
  */
-void renderScene()
+void ViewWidget::paintGL()
 {
-	glClearColor( bkgrnd_color_r, bkgrnd_color_g , bkgrnd_color_b, 0.0 );
+	qglClearColor( bkgrnd_color );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	
-	pMaze->Draw( floorTextureNumber, wallsTextureNumber );
+	maze.Draw( floorTextureNumber, wallsTextureNumber );
 	
 	glFlush();
-	glutSwapBuffers(); 
 }
 
 /* keyboard input handler....responds to 
  * the quit_button (defined in the header) for quiting
  * and allows the user to lift up their drawing pen
  */
-void keyPressed( unsigned char key, int x, int y )
+void ViewWidget::keyPressEvent( QKeyEvent * event )
 {
-	if ( key== quit_button )
+	Qt::Key pressedKey = static_cast< Qt::Key >( event->key() );
+	if ( pressedKey == quit_button )
 	{
-		ReleaseStaticVariables();
 		exit( exit_success );
 	}
 }
@@ -99,132 +105,142 @@ void keyPressed( unsigned char key, int x, int y )
  * what state of interaction the system will be in
  * ( translating vs. rotating vs. scaling vs. ... )
  */
-void mouseButtonPressed( int button, int state, int x, int y )
+void ViewWidget::mousePressEvent( QMouseEvent * event )
 {
-	//if the left botton is down
-	if( ( state == GLUT_DOWN ) && ( button == GLUT_LEFT_BUTTON ) )
+	//if the user pressed the left mouse button
+	if( ( ( event->button() & Qt::LeftButton ) != 0 ) )
 	{
-		//if "control" is also down
-		if( glutGetModifiers() == GLUT_ACTIVE_SHIFT )
+		//if "shift" is also down
+		if( event->modifiers() & Qt::ShiftModifier )
 		{
-			pStateOfUserInteraction->setTranslating();
+			stateOfUserInteraction.setTranslating();
 		}
-		else if( glutGetModifiers() == GLUT_ACTIVE_CTRL )
+		//or if "control" is also down
+		else if( event->modifiers() & Qt::ControlModifier )
 		{
-			pStateOfUserInteraction->setScaling();
+			stateOfUserInteraction.setScaling();
 		}
-		else if( glutGetModifiers() == GLUT_ACTIVE_ALT )
+		//or if "alt" is also down
+		else if( event->modifiers() & Qt::AltModifier )
 		{
-			pStateOfUserInteraction->setStretching();
+			stateOfUserInteraction.setStretching();
 		}
 		else
 		{
-			pStateOfUserInteraction->setRotating();
+			stateOfUserInteraction.setRotating();
 		}
 	}
-	else
-	{
-		pStateOfUserInteraction->reset();
-	}
 	
-	pStateOfUserInteraction->setLastMousePosition( x, y );
+	stateOfUserInteraction.setLastMousePosition( event->x(), event->y() );
+}
+
+
+/* catch when the mouse button is released
+ */
+void ViewWidget::mouseReleaseEvent( QMouseEvent * event )
+{
+	stateOfUserInteraction.reset();
+
+	stateOfUserInteraction.setLastMousePosition( event->x(), event->y() );
 }
 
 
 /* this function does all the work in tranforming mouse movement into 
  * a translation/rotation/scaling of the model
  */
-void mouseMoved( int x, int y )
+void ViewWidget::mouseMoveEvent( QMouseEvent * event )
 {
-	bool movedLeft = pStateOfUserInteraction->movedMouseLeft( x );
-	bool movedRight = pStateOfUserInteraction->movedMouseRight( x );
-	bool movedUp = pStateOfUserInteraction->movedMouseUp( y );
-	bool movedDown = pStateOfUserInteraction->movedMouseDown( y );
+	makeCurrent();
+
+	bool movedLeft = stateOfUserInteraction.movedMouseLeft( event->x() );
+	bool movedRight = stateOfUserInteraction.movedMouseRight( event->x() );
+	bool movedUp = stateOfUserInteraction.movedMouseUp( event->y() );
+	bool movedDown = stateOfUserInteraction.movedMouseDown( event->y() );
 
     //if the user is streching the model
-    if( pStateOfUserInteraction->isStretching() )
+	if( stateOfUserInteraction.isStretching() )
     {
         //if the user moves a little up
         if( movedUp )
         {
-        	pStateOfProjection->increaseFishEyeEffect();
+			stateOfProjection.increaseFishEyeEffect();
         }
         //or down
         else if( movedDown )
         {
-        	pStateOfProjection->decreaseFishEyeEffect();
+			stateOfProjection.decreaseFishEyeEffect();
         }
     	computeFrustum();
-    	glutPostRedisplay();
+		updateGL();
     }
     
     else
     {
     	//if the user is translating the model
-    	if( pStateOfUserInteraction->isTranslating() )
+		if( stateOfUserInteraction.isTranslating() )
 	    {
 	        //if the user moves a little to the right
 	        if( movedRight )
 	        {
-	        	pStateOfTransformation->addToXTranslation( translation_increment );
+				stateOfTransformation.addToXTranslation( translation_increment );
 	        }
 	        //or left
 	        else if( movedLeft )
 	        {
-	        	pStateOfTransformation->addToXTranslation( -translation_increment );
+				stateOfTransformation.addToXTranslation( -translation_increment );
 	        }
 	        //possibly up
 	        if( movedUp )
 	        {
-	        	pStateOfTransformation->addToYTranslation( translation_increment );
+				stateOfTransformation.addToYTranslation( translation_increment );
 	        }
 	        //or down
 	        else if( movedDown )
 	        {
-	        	pStateOfTransformation->addToYTranslation( -translation_increment );
+				stateOfTransformation.addToYTranslation( -translation_increment );
 	        } 
 	    }
 	    //if the the user is scaling the model
-	    else if( pStateOfUserInteraction->isScaling() )
+		else if( stateOfUserInteraction.isScaling() )
 	    {
 	        //if the user moves a little up
 	        if( movedUp )
 	        {
-	        	pStateOfTransformation->multiplyXScaleBy( scale_multiplier );
-	        	pStateOfTransformation->multiplyYScaleBy( scale_multiplier );
-	        	pStateOfTransformation->multiplyZScaleBy( scale_multiplier );
+				stateOfTransformation.multiplyXScaleBy( scale_multiplier );
+				stateOfTransformation.multiplyYScaleBy( scale_multiplier );
+				stateOfTransformation.multiplyZScaleBy( scale_multiplier );
 	        }
 	        //or down
 	        else if( movedDown )
 	        {
-	        	pStateOfTransformation->multiplyXScaleBy( 1/scale_multiplier );
-	        	pStateOfTransformation->multiplyYScaleBy( 1/scale_multiplier );
-	        	pStateOfTransformation->multiplyZScaleBy( 1/scale_multiplier );
+				stateOfTransformation.multiplyXScaleBy( 1/scale_multiplier );
+				stateOfTransformation.multiplyYScaleBy( 1/scale_multiplier );
+				stateOfTransformation.multiplyZScaleBy( 1/scale_multiplier );
 	        } 
 	    }
 	    
 	    //if the user is rotating the model
-	    else if( pStateOfUserInteraction->isRotating() )
+		else if( stateOfUserInteraction.isRotating() )
 	    {
 	      //if the user moves a little to the right
 	        if( movedRight )
 	        {
-	        	pStateOfTransformation->rotateAroundYAxis( rotation_increment );
+				stateOfTransformation.rotateAroundYAxis( rotation_increment );
 	        }
 	        //or left
 	        else if( movedLeft )
 	        {
-	        	pStateOfTransformation->rotateAroundYAxis( -rotation_increment );
+				stateOfTransformation.rotateAroundYAxis( -rotation_increment );
 	        }
 	        //possibly up
 	        if( movedUp )
 	        {
-	        	pStateOfTransformation->rotateAroundXAxis( -rotation_increment );
+				stateOfTransformation.rotateAroundXAxis( -rotation_increment );
 	        }
 	        //or down
 	        else if( movedDown )
 	        {
-	        	pStateOfTransformation->rotateAroundXAxis( rotation_increment );
+				stateOfTransformation.rotateAroundXAxis( rotation_increment );
 	        }
 	    }
 	    
@@ -235,29 +251,29 @@ void mouseMoved( int x, int y )
 	    glMatrixMode( GL_MODELVIEW );
 	    glLoadIdentity();
 	  
-	    glTranslatef( pStateOfTransformation->getXTranslation(), 
-	    			  pStateOfTransformation->getYTranslation(), 
-	    			  pStateOfTransformation->getZTranslation() );
+		glTranslatef( stateOfTransformation.getXTranslation(),
+					  stateOfTransformation.getYTranslation(),
+					  stateOfTransformation.getZTranslation() );
 	
-	    glMultMatrixd( pStateOfTransformation->getRotationMatrix() );
+		glMultMatrixd( stateOfTransformation.getRotationMatrix() );
 	    
-	    glScalef( pStateOfTransformation->getXScale(), 
-				  pStateOfTransformation->getYScale(), 
-				  pStateOfTransformation->getZScale() );
+		glScalef( stateOfTransformation.getXScale(),
+				  stateOfTransformation.getYScale(),
+				  stateOfTransformation.getZScale() );
 	  
-	    glutPostRedisplay();
+		updateGL();
     }
     
     //update the current mouse position
-	pStateOfUserInteraction->setLastMousePosition( x, y );
+	stateOfUserInteraction.setLastMousePosition( event->x(), event->y() );
 }
 
 
 /* change size handler...
- * lets the user resize  the window 
+ * lets the user resize the window
  * but keeps everything in the correct perspective
  */
-void windowChangedSize( int width, int height )
+void ViewWidget::resizeGL( int width, int height )
 {
     //stop the user from shrinking the window completely 
 	if( height == 0 )
@@ -267,53 +283,131 @@ void windowChangedSize( int width, int height )
     
     glViewport( 0, 0, width, height );
     
-    pStateOfProjection->setWidthOfScreen( width );
-    pStateOfProjection->setHeightOfScreen( height );
+	stateOfProjection.setWidthOfScreen( width );
+	stateOfProjection.setHeightOfScreen( height );
     
     computeFrustum();
     
-    glutPostRedisplay();
+	updateGL();
 }
 
 
 /* computes the viewing frustum
  * given the current state of affairs
  */
-void computeFrustum()
+void ViewWidget::computeFrustum()
 {
+	makeCurrent();
+
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
     
-    gluPerspective( pStateOfProjection->getFovyAngle(), 
-    			 	pStateOfProjection->getAspectRatio(),
-    			 	pStateOfProjection->getCameraDistanceToNearClippingPlane(),  
-                    pStateOfProjection->getCameraDistanceToFarClippingPlane() );
-    gluLookAt( 0.0, 0.0, pStateOfProjection->getCameraZPosition(), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 );
+	gluPerspective( stateOfProjection.getFovyAngle(),
+					stateOfProjection.getAspectRatio(),
+					stateOfProjection.getCameraDistanceToNearClippingPlane(),
+					stateOfProjection.getCameraDistanceToFarClippingPlane() );
+	gluLookAt( 0.0, 0.0, stateOfProjection.getCameraZPosition(), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 );
 }
 
 
-/* this is the callback for handling the 
- * actions of the right mouse button menu
+/* loads a texture file, reads it into memory,
+ * and then registers the texture with opengl, returning the texture name
  */
-void menuCallback( int option_number )
+GLuint ViewWidget::loadAndRegisterTexture( const QString & textureFileName )
 {
-  switch( option_number )
-  {
-  	case 1:
-  		//reinitialize the state of the display
-  		glMatrixMode( GL_MODELVIEW );
-  		glLoadIdentity();
-     
-  		//set the transformation to be the identity
-  		pStateOfTransformation->reset();
-  		
-  		//reset all the viewing properties
-  		pStateOfProjection->setFovyAngle( initial_fovy_angle );
-  		pStateOfProjection->setCameraZPosition( initial_z_coord_of_camera );
+	PPMTexture texture;
+	try
+	{
+		//may throw an exception which signals that the user wishes to quit
+		LoadFile( textureFileName.toStdString(), texture );
+	}
+	catch ( UserWishesToExitException & ue )
+	{
+		std::cout << "goodbye";
+		exit( exit_success );
+	}
 
-  		computeFrustum();
-    
-  		glutPostRedisplay();
-  		break;
-  }
+	//register the texture
+	return RegisterTexture( texture );
+}
+
+
+/* open a 3D maze file
+ */
+void ViewWidget::openMaze()
+{
+	QString newFileName = QFileDialog::getOpenFileName( this, tr( "Open 3D Maze File" ), QDir::currentPath() );
+	if ( !newFileName.isEmpty() ) {
+		try
+		{
+			LoadFile( newFileName.toStdString(), maze );
+			updateGL();
+		}
+		catch ( UserWishesToExitException & ue )
+		{
+			std::cout << "goodbye";
+			exit( exit_success );
+		}
+	}
+}
+
+
+/* lets the user choose a different texture to use as the walls
+ */
+void ViewWidget::replaceFloorTexture()
+{
+	QString fileTypes( "PPM Files (*.ppm)" );
+	QString newFloorTextureFileName = QFileDialog::getOpenFileName( this, tr( "Open Floor Texture File" ), QDir::currentPath(), fileTypes );
+	if ( !newFloorTextureFileName.isEmpty() ) {
+		makeCurrent();
+
+		//unregister the previous floor texture
+		glDeleteTextures( 1, &floorTextureNumber );
+
+		floorTextureNumber = loadAndRegisterTexture( newFloorTextureFileName );
+
+		updateGL();
+	}
+}
+
+
+/* lets the user choose a different texture to use as the walls
+ */
+void ViewWidget::replaceWallTexture()
+{
+	QString fileTypes( "PPM Files (*.ppm)" );
+	QString newWallTextureFileName = QFileDialog::getOpenFileName( this, tr( "Open Wall Texture File" ), QDir::currentPath(), fileTypes );
+	if ( !newWallTextureFileName.isEmpty() ) {
+		makeCurrent();
+
+		//unregister the previous floor texture
+		glDeleteTextures( 1, &wallsTextureNumber );
+
+		wallsTextureNumber = loadAndRegisterTexture( newWallTextureFileName );
+
+		updateGL();
+	}
+}
+
+
+/* resets the transformation and projection of the model
+ */
+void ViewWidget::reinitializeView()
+{
+	makeCurrent();
+
+	//reinitialize the state of the display
+	glMatrixMode( GL_MODELVIEW );
+	glLoadIdentity();
+
+	//set the transformation to be the identity
+	stateOfTransformation.reset();
+
+	//reset all the viewing properties
+	stateOfProjection.setFovyAngle( initial_fovy_angle );
+	stateOfProjection.setCameraZPosition( initial_z_coord_of_camera );
+
+	computeFrustum();
+
+	updateGL();
 }
