@@ -21,6 +21,11 @@ PPMTexture::PPMTexture() :
 
 void PPMTexture::readIn( istream & in /* = cin */ ) throw( IOError & )
 {
+	if ( pixelData != NULL )
+	{
+		delete[] pixelData;
+	}
+
 	char buffer[80];
    
 	// read the header: "P3".  Report errors to cerr

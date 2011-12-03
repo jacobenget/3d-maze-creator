@@ -35,14 +35,17 @@ int main( int argc, char * argv[] ) {
 	QAction * replaceFloorTextureAction = new QAction( window.tr( "Replace Floor Texture" ), &window );
 	QAction * replaceWallTextureAction = new QAction( window.tr( "Replace Wall Texture" ), &window );
 	QAction * reinitializeMazeAction = new QAction( window.tr( "Reinitialize" ), &window );
+	QAction * exploreMazeAction = new QAction( window.tr( "Explore..." ), &window );
 	window.connect( open3DMazeAction, SIGNAL( triggered() ), viewWidget, SLOT( openMaze() ) );
 	window.connect( replaceFloorTextureAction, SIGNAL( triggered() ), viewWidget, SLOT( replaceFloorTexture() ) );
 	window.connect( replaceWallTextureAction, SIGNAL( triggered() ), viewWidget, SLOT( replaceWallTexture() ) );
 	window.connect( reinitializeMazeAction, SIGNAL( triggered() ), viewWidget, SLOT( reinitializeView() ) );
+	window.connect( exploreMazeAction, SIGNAL( triggered() ), viewWidget, SLOT( exploreMaze() ) );
 	viewWidget->addAction( open3DMazeAction );
 	viewWidget->addAction( replaceFloorTextureAction );
 	viewWidget->addAction( replaceWallTextureAction );
 	viewWidget->addAction( reinitializeMazeAction );
+	viewWidget->addAction( exploreMazeAction );
 
 	QSplitter * splitter = new QSplitter;
 	splitter->addWidget( editWidget );

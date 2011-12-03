@@ -53,10 +53,13 @@ class ViewWidget : public QGLWidget
 		void replaceFloorTexture();
 		void replaceWallTexture();
 		void reinitializeView();
+		void exploreMaze();
 
 	private:
 		void computeFrustum();
-		GLuint loadAndRegisterTexture( const QString & textureFileName );
+
+		PPMTexture floorTexture;
+		PPMTexture wallsTexture;
 
 		GLuint floorTextureNumber;
 		GLuint wallsTextureNumber;

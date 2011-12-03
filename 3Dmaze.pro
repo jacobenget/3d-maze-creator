@@ -46,7 +46,8 @@ SOURCES +=\
 	Library/Util/ConversionFunctions.cpp \
     Edit/edit2DMaze.cpp \
 	View/view3DMaze.cpp \
-    main.cpp
+    main.cpp \
+    Explore/explore3DMaze.cpp
 
 HEADERS  += \
     Library/2DStructures/Vector2D.h \
@@ -76,4 +77,5 @@ HEADERS  += \
     Library/Util/ConversionFunctions.h \
 	Library/Util/BoundsCheckingContainer.h \
     Edit/edit2DMaze.h \
-	View/view3DMaze.h
+	View/view3DMaze.h \
+    Explore/explore3DMaze.h

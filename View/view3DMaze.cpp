@@ -14,6 +14,7 @@
 
 
 #include "view3DMaze.h"
+#include "../Explore/explore3DMaze.h"
 
 const QColor ViewWidget::bkgrnd_color( 204, 204, 242 );
 
@@ -47,7 +48,8 @@ ViewWidget::ViewWidget( QWidget * parent /* = NULL */ ) :
 						distance_between_camera_and_near_clipping_plane,
 						fovy_angle_ratio_change,
 						min_z_coord_of_camera,
-						max_z_coord_of_camera ) {
+						max_z_coord_of_camera )
+{
 
 	stateOfTransformation.setUpXScale( min_scale, max_scale, 1 );
 	stateOfTransformation.setUpYScale( min_scale, max_scale, 1 );
@@ -66,11 +68,13 @@ void ViewWidget::initializeGL()
 {
 	glEnable( GL_DEPTH_TEST );
 
-	//register the walls texture
-	floorTextureNumber = loadAndRegisterTexture( default_floor_texture_file_name );
+	//load and register the floor texture
+	LoadFile( default_floor_texture_file_name.toStdString(), floorTexture );
+	floorTextureNumber = RegisterTexture( floorTexture );
 
-	//register the walls texture
-	wallsTextureNumber = loadAndRegisterTexture( default_walls_texture_file_name );
+	//load and register the walls texture
+	LoadFile( default_walls_texture_file_name.toStdString(), wallsTexture );
+	wallsTextureNumber = RegisterTexture( wallsTexture );
 }
 
 
@@ -310,28 +314,6 @@ void ViewWidget::computeFrustum()
 }
 
 
-/* loads a texture file, reads it into memory,
- * and then registers the texture with opengl, returning the texture name
- */
-GLuint ViewWidget::loadAndRegisterTexture( const QString & textureFileName )
-{
-	PPMTexture texture;
-	try
-	{
-		//may throw an exception which signals that the user wishes to quit
-		LoadFile( textureFileName.toStdString(), texture );
-	}
-	catch ( UserWishesToExitException & ue )
-	{
-		std::cout << "goodbye";
-		exit( exit_success );
-	}
-
-	//register the texture
-	return RegisterTexture( texture );
-}
-
-
 /* open a 3D maze file
  */
 void ViewWidget::openMaze()
@@ -364,7 +346,9 @@ void ViewWidget::replaceFloorTexture()
 		//unregister the previous floor texture
 		glDeleteTextures( 1, &floorTextureNumber );
 
-		floorTextureNumber = loadAndRegisterTexture( newFloorTextureFileName );
+		//load and register the floor texture
+		LoadFile( newFloorTextureFileName.toStdString(), floorTexture );
+		floorTextureNumber = RegisterTexture( floorTexture );
 
 		updateGL();
 	}
@@ -380,10 +364,12 @@ void ViewWidget::replaceWallTexture()
 	if ( !newWallTextureFileName.isEmpty() ) {
 		makeCurrent();
 
-		//unregister the previous floor texture
+		//unregister the previous walls texture
 		glDeleteTextures( 1, &wallsTextureNumber );
 
-		wallsTextureNumber = loadAndRegisterTexture( newWallTextureFileName );
+		//load and register the walls texture
+		LoadFile( newWallTextureFileName.toStdString(), wallsTexture );
+		wallsTextureNumber = RegisterTexture( wallsTexture );
 
 		updateGL();
 	}
@@ -410,4 +396,26 @@ void ViewWidget::reinitializeView()
 	computeFrustum();
 
 	updateGL();
+}
+
+
+/* loads the maze into a model dialog to let the user explore
+ */
+void ViewWidget::exploreMaze()
+{
+	QDialog exploreDialog( this, Qt::WindowMaximizeButtonHint );
+
+	QVBoxLayout * layout = new QVBoxLayout;
+	ExploreWidget * exploreWidget = new ExploreWidget( maze, floorTexture, wallsTexture );
+	layout->addWidget( exploreWidget );
+	layout->setContentsMargins( 0, 0, 0, 0 );
+	exploreDialog.setLayout( layout );
+
+	exploreWidget->setFocus( Qt::PopupFocusReason );
+
+	connect( exploreWidget, SIGNAL( quit() ), &exploreDialog, SLOT( accept() ) );
+	connect( exploreWidget, SIGNAL( stealMyFocus() ), &exploreDialog, SLOT( setFocus() ) );
+
+	exploreDialog.resize( 400, 400 );
+	exploreDialog.exec();
 }

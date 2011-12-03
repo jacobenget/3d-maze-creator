@@ -15,50 +15,81 @@
 
 #include "explore3DMaze.h"
 
-using namespace std;
+const int exit_success = 0;
+
+const QColor ExploreWidget::bkgrnd_color( 179, 179, 230 );
+
+const double ExploreWidget::global_x_tilt = -90.0;
+
+const double ExploreWidget::fovy_angle_ratio_change = 0.985;
+const double ExploreWidget::initial_fovy_angle = 90.0;
+const double ExploreWidget::initial_z_coord_of_camera = 0.0;
+
+const double ExploreWidget::distance_between_camera_and_near_clipping_plane = 1;
+
+const double ExploreWidget::incremental_angle_change = 3.0;  //in degrees
+const double ExploreWidget::incremental_position_change = 2.0;
+const double ExploreWidget::jump_velocity = 3.0;
+
+//buffer between player and walls, so the walls don't clip when the user collids with them
+//should NOT be larger than the width of the walls divided by incremental_position_change
+const double ExploreWidget::buffer_distance = 2.0;
+
+const Qt::Key ExploreWidget::quit_button = Qt::Key_Q;
+const Qt::Key ExploreWidget::release_focus_button = Qt::Key_Escape;
+const Qt::Key ExploreWidget::move_forward_button = Qt::Key_W;
+const Qt::Key ExploreWidget::move_backward_button = Qt::Key_S;
+const Qt::Key ExploreWidget::strafe_right_button = Qt::Key_D;
+const Qt::Key ExploreWidget::strafe_left_button = Qt::Key_A;
+const Qt::Key ExploreWidget::jump_button = Qt::Key_Space;
+const Qt::Key ExploreWidget::zoom_in_button = Qt::Key_C;
+const Qt::Key ExploreWidget::zoom_out_button = Qt::Key_R;
 
 
-int main( int argc, char** argv )
+ExploreWidget::ExploreWidget( const Maze3D & maze_, const PPMTexture & floorTexture_, const PPMTexture & wallsTexture_, QWidget * parent /*= NULL*/ ) :
+	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba | QGL::DepthBuffer ), parent ),
+	maze( maze_ ),
+	floorTexture( floorTexture_ ),
+	wallsTexture( wallsTexture_ ),
+	floorTextureNumber( 0 ),
+	wallsTextureNumber( 0 ),
+	stateOfProjection(	initial_fovy_angle,
+						initial_z_coord_of_camera,
+						z_value_of_far_clipping_plane,
+						distance_between_camera_and_near_clipping_plane,
+						fovy_angle_ratio_change,
+						min_z_coord_of_camera,
+						max_z_coord_of_camera ),
+	stateOfTransformationFP(	incremental_position_change,
+								incremental_position_change,
+								jump_velocity,
+								buffer_distance ),
+	timesCursorHidden( 0 )
 {
-	glutInit( &argc, argv );
-	glutInitDisplayMode( GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH );
-	glutInitWindowSize( initial_window_width, initial_window_height );
-	glutInitWindowPosition( initial_window_x_position, initial_window_y_position );
-	glutCreateWindow( window_title.c_str() );
+	setMouseTracking( true );	// so the widget can listen to mouse movement when a mouse button isn't down
+	setFocusPolicy( Qt::ClickFocus );	// so the widget can accept keyboard input
+}
 
-	glutKeyboardFunc( keyPressed ); 
-	glutKeyboardUpFunc( keyReleased ); 
-   
-	//whenever the mouse moves without a button pressed do this:
-	glutPassiveMotionFunc( mouseMoved );
-  
-	//whenever the mouse moves with a button pressed do this:
-	glutMotionFunc( mouseMoved );
-  
-	glutReshapeFunc( windowChangedSize );
-	glutDisplayFunc( renderScene ); 
-	glutIdleFunc( renderScene ); 
-  
+ExploreWidget::~ExploreWidget()
+{
+	stopHidingCursor();
+}
+
+
+void ExploreWidget::initializeGL()
+{
 	glEnable( GL_DEPTH_TEST );
-	
-	//try to initialize the rest of the environment
-	try
-	{
-		initEnvironment( argc, argv );
-	}
-	catch ( UserWishesToExitException & ue )
-	{
-		cout << "goodbye!";
-		return exit_success;
-	}
-  	
-	glutMainLoop();
-	
-	//we'll never really get here because glutMainLoop should never return.
-	//But just in case, we'll clean up our dynamic variables
-	ReleaseStaticVariables();
-	
-	return exit_success;
+
+	//register the floor texture
+	floorTextureNumber = RegisterTexture( floorTexture );
+
+	//register the wall texture
+	wallsTextureNumber = RegisterTexture( wallsTexture );
+
+	// set up a timer to control the frame rate
+	QTimer * redrawTimer = new QTimer( this );
+	connect( redrawTimer, SIGNAL( timeout() ), this, SLOT( updateGL() ) );
+	redrawTimer->start( 1000 / frames_per_second );
 }
 
 
@@ -66,46 +97,60 @@ int main( int argc, char** argv )
  * compute the placement of the player based on current movement,
  * and then draw the textured maze
  */
-void renderScene()
+void ExploreWidget::paintGL()
 {
-	//wait until the next frame needs to be rendered
-	fpsController.waitForNextFrame();
-	
 	//update the players position
-	pStateOfTransformationFP->updatePosition( *pMaze, *pStateOfUserInteractionFP );
+	stateOfTransformationFP.updatePosition( maze, stateOfUserInteractionFP );
 	
 	//set up the drawing environment
-	glClearColor( bkgrnd_color_r, bkgrnd_color_g , bkgrnd_color_b, 0.0 );
+	qglClearColor( bkgrnd_color );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT ); 
 	glMatrixMode( GL_MODELVIEW );
 	glLoadIdentity();
 	//tilt the camera towards where the player is looking
-	glRotatef( pStateOfTransformationFP->getTiltAngleDegrees(), 1.0, 0.0, 0.0 );
-    glRotatef( pStateOfTransformationFP->getSpinAngleDegrees(), 0.0, 1.0, 0.0 );
+	glRotatef( stateOfTransformationFP.getTiltAngleDegrees(), 1.0, 0.0, 0.0 );
+	glRotatef( stateOfTransformationFP.getSpinAngleDegrees(), 0.0, 1.0, 0.0 );
     //tranlate the world so that the character inside it at the right place
-    glTranslatef( -pStateOfTransformationFP->getXPositionOffset(), 
-    			  -pStateOfTransformationFP->getYPositionOffset(), 
-    			  -pStateOfTransformationFP->getZPositionOffset() );
+	glTranslatef( -stateOfTransformationFP.getXPositionOffset(),
+				  -stateOfTransformationFP.getYPositionOffset(),
+				  -stateOfTransformationFP.getZPositionOffset() );
     
     //tilt everything upright
     glRotatef( global_x_tilt, 1.0, 0.0, 0.0 );
     
     //draw the maze
-    pMaze->Draw( floorTextureNumber, wallsTextureNumber );
+	maze.Draw( floorTextureNumber, wallsTextureNumber );
     
     //if the user is changing their perspective
-    if( pStateOfUserInteractionFP->isZoomingIn() )
+	if( stateOfUserInteractionFP.isZoomingIn() )
     {
-    	pStateOfProjection->decreaseFishEyeEffect();
+		stateOfProjection.decreaseFishEyeEffect();
     }
-    else if( pStateOfUserInteractionFP->isZoomingOut() )
+	else if( stateOfUserInteractionFP.isZoomingOut() )
     {
-    	pStateOfProjection->increaseFishEyeEffect();
+		stateOfProjection.increaseFishEyeEffect();
     }
     
 	computeFrustum();
-    glFlush();
-    glutSwapBuffers();
+
+	// if this widget has focus then
+	// draw instructions on how to close this widget or force it to release the mouse
+	if ( hasFocus() ) {
+		QKeySequence quitSequence( quit_button );
+		QString quitInstructions = QString( "Press %1 to quit exploring" ).arg( quitSequence.toString() );
+		QKeySequence releaseFocusSequence( release_focus_button );
+		QString releaseMouseInstructions = QString( "Press %1 to release the mouse" ).arg( releaseFocusSequence.toString() );
+
+		QFont font;
+		QFontMetrics fontMetrics( font );
+
+		QRect instructionsRect = fontMetrics.boundingRect( quitInstructions );
+		int padding = 4;
+		renderText( padding, padding + instructionsRect.height(), quitInstructions, font );
+		renderText( padding, 2 * ( padding + instructionsRect.height() ), releaseMouseInstructions, font );
+	}
+
+	glFlush();
 }
 
 
@@ -113,36 +158,42 @@ void renderScene()
  * responds to key commands for movement,
  * changing perspective, and quiting
  */
-void keyPressed( unsigned char key, int x, int y )
+void ExploreWidget::keyPressEvent( QKeyEvent * event )
 {
-	switch( key )
+	Qt::Key pressedKey = static_cast< Qt::Key >( event->key() );
+	switch( pressedKey )
 	{
-		case quit_button:			exit( exit_success );
+		case quit_button:			emit quit();
+									break;
+
+		case release_focus_button:	stopHidingCursor();
+									emit stealMyFocus();
 									break;
 									
-		case strafe_left_button: 	pStateOfUserInteractionFP->setStrafingLeft( true );
+		case strafe_left_button: 	stateOfUserInteractionFP.setStrafingLeft( true );
 									break;
 									
-		case strafe_right_button: 	pStateOfUserInteractionFP->setStrafingRight( true );
+		case strafe_right_button: 	stateOfUserInteractionFP.setStrafingRight( true );
 									break;
 									
-		case move_backward_button: 	pStateOfUserInteractionFP->setMovingBackward( true );
+		case move_backward_button: 	stateOfUserInteractionFP.setMovingBackward( true );
 									break;
 									
-		case move_forward_button: 	pStateOfUserInteractionFP->setMovingForward( true );
+		case move_forward_button: 	stateOfUserInteractionFP.setMovingForward( true );
 									break;
 									
-		case zoom_out_button: 		pStateOfUserInteractionFP->setZoomingOut( true );
+		case zoom_out_button: 		stateOfUserInteractionFP.setZoomingOut( true );
 									break;
 									
-		case zoom_in_button: 		pStateOfUserInteractionFP->setZoomingIn( true );
+		case zoom_in_button: 		stateOfUserInteractionFP.setZoomingIn( true );
 									break;
 									
-		case jump_button:			pStateOfTransformationFP->jump();
+		case jump_button:			stateOfTransformationFP.jump();
 									break;
 									
 		default:					break;
 	}
+	updateGL();
 }
 
 
@@ -150,77 +201,126 @@ void keyPressed( unsigned char key, int x, int y )
  * responds to key commands for movement,
  * and changing perspective
  */
-void keyReleased( unsigned char key, int x, int y )
+void ExploreWidget::keyReleaseEvent( QKeyEvent * event )
 {
-	switch( key )
+	Qt::Key pressedKey = static_cast< Qt::Key >( event->key() );
+	switch( pressedKey )
 	{
-		case strafe_left_button: 	pStateOfUserInteractionFP->setStrafingLeft( false );
+		case strafe_left_button: 	stateOfUserInteractionFP.setStrafingLeft( false );
 									break;
 									
-		case strafe_right_button: 	pStateOfUserInteractionFP->setStrafingRight( false );
+		case strafe_right_button: 	stateOfUserInteractionFP.setStrafingRight( false );
 									break;
 									
-		case move_backward_button: 	pStateOfUserInteractionFP->setMovingBackward( false );
+		case move_backward_button: 	stateOfUserInteractionFP.setMovingBackward( false );
 									break;
 									
-		case move_forward_button: 	pStateOfUserInteractionFP->setMovingForward( false );
+		case move_forward_button: 	stateOfUserInteractionFP.setMovingForward( false );
 									break;
 									
-		case zoom_out_button: 		pStateOfUserInteractionFP->setZoomingOut( false );
+		case zoom_out_button: 		stateOfUserInteractionFP.setZoomingOut( false );
 									break;
 									
-		case zoom_in_button: 		pStateOfUserInteractionFP->setZoomingIn( false );
+		case zoom_in_button: 		stateOfUserInteractionFP.setZoomingIn( false );
 									break;
 									
 		default:					break;
 	}
+	updateGL();
 }
 
 
 /* rotates the world based on user input with the mouse
  */
-void mouseMoved( int x, int y )
-{ 
+void ExploreWidget::mouseMoveEvent( QMouseEvent * event )
+{
+	// only listen to mouse events if focus is had
+	if ( !hasFocus() )
+	{
+		return;
+	}
+
     //if rotating down to up, 
-    if( pStateOfUserInteractionFP->mouseMovedUp( y ) )
+	if( stateOfUserInteractionFP.mouseMovedUp( event->y() ) )
     {
-        pStateOfTransformationFP->lookUp( incremental_angle_change );
+		stateOfTransformationFP.lookUp( incremental_angle_change );
     }
     //if rotating up to down, 
-    else if( pStateOfUserInteractionFP->mouseMovedDown( y ) )
+	else if( stateOfUserInteractionFP.mouseMovedDown( event->y() ) )
     {
-        pStateOfTransformationFP->lookDown( incremental_angle_change );
+		stateOfTransformationFP.lookDown( incremental_angle_change );
     }
     //if rotating left to right, 
-    if( pStateOfUserInteractionFP->mouseMovedRight( x ) )
+	if( stateOfUserInteractionFP.mouseMovedRight( event->x() ) )
     {
-        pStateOfTransformationFP->lookRight( incremental_angle_change );
+		stateOfTransformationFP.lookRight( incremental_angle_change );
     }
     //if rotating right to left,
-    else if( pStateOfUserInteractionFP->mouseMovedLeft( x ) )
+	else if( stateOfUserInteractionFP.mouseMovedLeft( event->x() ) )
     {
-        pStateOfTransformationFP->lookLeft( incremental_angle_change );
-    }
-    
-    //update the current mouse position
-    pStateOfUserInteractionFP->setLastMousePosition( x, y );
+		stateOfTransformationFP.lookLeft( incremental_angle_change );
+	}
+
+	// reposition the cursor to the middle of the screen
+	QCursor::setPos( mapToGlobal( QPoint( width() / 2, height() / 2 ) ) );
+
+	//update the current mouse position
+	stateOfUserInteractionFP.setLastMousePosition( width() / 2, height() / 2 );
+}
+
+
+/* hide the cursor when focus is received, show the cursor otherwise
+ */
+void ExploreWidget::focusInEvent( QFocusEvent * event )
+{
+	if ( event->gotFocus() )
+	{
+		hideCursor();
+	}
+	else if ( event->lostFocus() )
+	{
+		stopHidingCursor();
+	}
 }
 
 
 /* computes the viewing frustum
  * given the current state of affairs
  */
-void computeFrustum()
+void ExploreWidget::computeFrustum()
 {
+	makeCurrent();
+
     glMatrixMode( GL_PROJECTION );
     glLoadIdentity();
     
-    gluPerspective( pStateOfProjection->getFovyAngle(), 
-    			 	pStateOfProjection->getAspectRatio(),
-    			 	pStateOfProjection->getCameraDistanceToNearClippingPlane(),  
-                    pStateOfProjection->getCameraDistanceToFarClippingPlane() );
+	gluPerspective( stateOfProjection.getFovyAngle(),
+					stateOfProjection.getAspectRatio(),
+					stateOfProjection.getCameraDistanceToNearClippingPlane(),
+					stateOfProjection.getCameraDistanceToFarClippingPlane() );
     
-    gluLookAt( 0.0, 0.0, pStateOfProjection->getCameraZPosition(), 0.0, 0.0, -1.0, 0.0, 1.0, 0.0 );
+	gluLookAt( 0.0, 0.0, stateOfProjection.getCameraZPosition(), 0.0, 0.0, -1.0, 0.0, 1.0, 0.0 );
+}
+
+
+/* hide the cursor
+ */
+void ExploreWidget::hideCursor()
+{
+	QApplication::setOverrideCursor( Qt::BlankCursor );
+	timesCursorHidden++;
+}
+
+
+/* undo all the times we've hid the cursor
+ */
+void ExploreWidget::stopHidingCursor()
+{
+	while ( timesCursorHidden > 0 )
+	{
+		QApplication::restoreOverrideCursor();
+		timesCursorHidden--;
+	}
 }
 
 
@@ -228,8 +328,10 @@ void computeFrustum()
  * lets the user resize  the window 
  * but keeps everything in the correct perspective
  */
-void windowChangedSize( int width, int height )
+void ExploreWidget::resizeGL( int width, int height )
 {
+	makeCurrent();
+
     if( height == 0 )
     {
         height = 1;
@@ -237,10 +339,10 @@ void windowChangedSize( int width, int height )
     
     glViewport( 0, 0, width, height );
     
-    pStateOfProjection->setWidthOfScreen( width );
-    pStateOfProjection->setHeightOfScreen( height );
+	stateOfProjection.setWidthOfScreen( width );
+	stateOfProjection.setHeightOfScreen( height );
     
-    computeFrustum();
-    glutPostRedisplay();
+	computeFrustum();
+	updateGL();
 }
 
