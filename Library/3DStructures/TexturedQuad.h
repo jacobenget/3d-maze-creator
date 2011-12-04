@@ -50,6 +50,7 @@ class TexturedQuad : public Quad
 		std::string type() const { return "Textured Quad";}
 		
 	private:
+		// texture coodinates of the four corners of the quad
 		Point2D p1Texture;
 		Point2D p2Texture;
 		Point2D p3Texture;

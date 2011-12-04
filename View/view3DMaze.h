@@ -57,6 +57,7 @@ class ViewWidget : public QGLWidget
 
 	private:
 		void computeFrustum();
+		void initializeTransformation();
 
 		PPMTexture floorTexture;
 		PPMTexture wallsTexture;

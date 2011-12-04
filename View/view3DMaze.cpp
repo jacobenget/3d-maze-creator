@@ -59,6 +59,8 @@ ViewWidget::ViewWidget( QWidget * parent /* = NULL */ ) :
 	stateOfTransformation.setUpYTranslation( -max_y_translation, max_y_translation, 0 );
 	stateOfTransformation.setUpZTranslation( 0, 0, 0 );
 
+	initializeTransformation();
+
 	setMouseTracking( true );	// so the widget can listen to mouse movement when a mouse button isn't down
 	setFocusPolicy( Qt::ClickFocus );	// so the widget can accept keyboard input
 	setContextMenuPolicy( Qt::ActionsContextMenu );	// so the widget can respond to context menu requests with it list of actions
@@ -86,7 +88,20 @@ void ViewWidget::paintGL()
 {
 	qglClearColor( bkgrnd_color );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
-	
+
+	glMatrixMode( GL_MODELVIEW );
+	glLoadIdentity();
+
+	glTranslatef( stateOfTransformation.getXTranslation(),
+				  stateOfTransformation.getYTranslation(),
+				  stateOfTransformation.getZTranslation() );
+
+	glMultMatrixd( stateOfTransformation.getRotationMatrix() );
+
+	glScalef( stateOfTransformation.getXScale(),
+			  stateOfTransformation.getYScale(),
+			  stateOfTransformation.getZScale() );
+
 	if ( maze != NULL )
 	{
 		maze->Draw( floorTextureNumber, wallsTextureNumber );
@@ -181,7 +196,6 @@ void ViewWidget::mouseMoveEvent( QMouseEvent * event )
     	computeFrustum();
 		updateGL();
     }
-    
     else
     {
     	//if the user is translating the model
@@ -250,25 +264,8 @@ void ViewWidget::mouseMoveEvent( QMouseEvent * event )
 	        {
 				stateOfTransformation.rotateAroundXAxis( rotation_increment );
 	        }
-	    }
-	    
-    	/* now that all the logic has been performed to determine
-    	 * how the user is affecting the model, now actually affect
-    	 * the model and redraw it
-    	 */
-	    glMatrixMode( GL_MODELVIEW );
-	    glLoadIdentity();
-	  
-		glTranslatef( stateOfTransformation.getXTranslation(),
-					  stateOfTransformation.getYTranslation(),
-					  stateOfTransformation.getZTranslation() );
-	
-		glMultMatrixd( stateOfTransformation.getRotationMatrix() );
-	    
-		glScalef( stateOfTransformation.getXScale(),
-				  stateOfTransformation.getYScale(),
-				  stateOfTransformation.getZScale() );
-	  
+		}
+
 		updateGL();
     }
     
@@ -315,6 +312,16 @@ void ViewWidget::computeFrustum()
 					stateOfProjection.getCameraDistanceToNearClippingPlane(),
 					stateOfProjection.getCameraDistanceToFarClippingPlane() );
 	gluLookAt( 0.0, 0.0, stateOfProjection.getCameraZPosition(), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 );
+}
+
+void ViewWidget::initializeTransformation()
+{
+	//set the transformation to be the identity
+	stateOfTransformation.reset();
+
+	// tilt the view a bit so the 3D-ness of the model is apparent
+	stateOfTransformation.rotateAroundZAxis( 50 );
+	stateOfTransformation.rotateAroundXAxis( -70 );
 }
 
 void ViewWidget::displayMaze3D( const Maze3D * maze3D )
@@ -376,8 +383,7 @@ void ViewWidget::reinitializeView()
 	glMatrixMode( GL_MODELVIEW );
 	glLoadIdentity();
 
-	//set the transformation to be the identity
-	stateOfTransformation.reset();
+	initializeTransformation();
 
 	//reset all the viewing properties
 	stateOfProjection.setFovyAngle( initial_fovy_angle );
