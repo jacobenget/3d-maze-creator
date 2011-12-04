@@ -47,7 +47,8 @@ SOURCES +=\
     Edit/edit2DMaze.cpp \
 	View/view3DMaze.cpp \
     main.cpp \
-    Explore/explore3DMaze.cpp
+    Explore/explore3DMaze.cpp \
+    MainWindow/MainWindow.cpp
 
 HEADERS  += \
     Library/2DStructures/Vector2D.h \
@@ -78,4 +79,5 @@ HEADERS  += \
 	Library/Util/BoundsCheckingContainer.h \
     Edit/edit2DMaze.h \
 	View/view3DMaze.h \
-    Explore/explore3DMaze.h
+    Explore/explore3DMaze.h \
+    MainWindow/MainWindow.h

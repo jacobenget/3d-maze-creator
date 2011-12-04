@@ -49,7 +49,7 @@ class ViewWidget : public QGLWidget
 		virtual void keyPressEvent( QKeyEvent * event );
 
 	public slots:
-		void openMaze();
+		void displayMaze3D( const Maze3D * maze3D );
 		void replaceFloorTexture();
 		void replaceWallTexture();
 		void reinitializeView();
@@ -64,7 +64,7 @@ class ViewWidget : public QGLWidget
 		GLuint floorTextureNumber;
 		GLuint wallsTextureNumber;
 
-		Maze3D maze;
+		const Maze3D * maze;
 		ProjectionState stateOfProjection;
 		TransformationState stateOfTransformation;
 		UserInteractionState stateOfUserInteraction;

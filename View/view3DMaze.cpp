@@ -42,6 +42,7 @@ ViewWidget::ViewWidget( QWidget * parent /* = NULL */ ) :
 	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba | QGL::DepthBuffer ), parent ),
 	floorTextureNumber( 0 ),
 	wallsTextureNumber( 0 ),
+	maze( NULL ),
 	stateOfProjection(	initial_fovy_angle,
 						initial_z_coord_of_camera,
 						z_value_of_far_clipping_plane,
@@ -86,7 +87,10 @@ void ViewWidget::paintGL()
 	qglClearColor( bkgrnd_color );
 	glClear( GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT );
 	
-	maze.Draw( floorTextureNumber, wallsTextureNumber );
+	if ( maze != NULL )
+	{
+		maze->Draw( floorTextureNumber, wallsTextureNumber );
+	}
 	
 	glFlush();
 }
@@ -313,24 +317,10 @@ void ViewWidget::computeFrustum()
 	gluLookAt( 0.0, 0.0, stateOfProjection.getCameraZPosition(), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 );
 }
 
-
-/* open a 3D maze file
- */
-void ViewWidget::openMaze()
+void ViewWidget::displayMaze3D( const Maze3D * maze3D )
 {
-	QString newFileName = QFileDialog::getOpenFileName( this, tr( "Open 3D Maze File" ), QDir::currentPath() );
-	if ( !newFileName.isEmpty() ) {
-		try
-		{
-			LoadFile( newFileName.toStdString(), maze );
-			updateGL();
-		}
-		catch ( UserWishesToExitException & ue )
-		{
-			std::cout << "goodbye";
-			exit( exit_success );
-		}
-	}
+	maze = maze3D;
+	updateGL();
 }
 
 
@@ -403,19 +393,21 @@ void ViewWidget::reinitializeView()
  */
 void ViewWidget::exploreMaze()
 {
-	QDialog exploreDialog( this, Qt::WindowMaximizeButtonHint );
+	if ( maze != NULL ) {
+		QDialog exploreDialog( this, Qt::WindowMaximizeButtonHint );
 
-	QVBoxLayout * layout = new QVBoxLayout;
-	ExploreWidget * exploreWidget = new ExploreWidget( maze, floorTexture, wallsTexture );
-	layout->addWidget( exploreWidget );
-	layout->setContentsMargins( 0, 0, 0, 0 );
-	exploreDialog.setLayout( layout );
+		QVBoxLayout * layout = new QVBoxLayout;
+		ExploreWidget * exploreWidget = new ExploreWidget( *maze, floorTexture, wallsTexture );
+		layout->addWidget( exploreWidget );
+		layout->setContentsMargins( 0, 0, 0, 0 );
+		exploreDialog.setLayout( layout );
 
-	exploreWidget->setFocus( Qt::PopupFocusReason );
+		exploreWidget->setFocus( Qt::PopupFocusReason );
 
-	connect( exploreWidget, SIGNAL( quit() ), &exploreDialog, SLOT( accept() ) );
-	connect( exploreWidget, SIGNAL( stealMyFocus() ), &exploreDialog, SLOT( setFocus() ) );
+		connect( exploreWidget, SIGNAL( quit() ), &exploreDialog, SLOT( accept() ) );
+		connect( exploreWidget, SIGNAL( stealMyFocus() ), &exploreDialog, SLOT( setFocus() ) );
 
-	exploreDialog.resize( 400, 400 );
-	exploreDialog.exec();
+		exploreDialog.resize( 400, 400 );
+		exploreDialog.exec();
+	}
 }

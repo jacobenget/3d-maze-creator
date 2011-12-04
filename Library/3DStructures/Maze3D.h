@@ -29,7 +29,8 @@ class Maze3D : public Serializable
 		int numberOfWalls() const;
 		const TexturedQuad & getFloor() const	{ return floor; }
 		void setFloor( const TexturedQuad & m_floor ) {	floor = m_floor; }
-		
+		void clearWalls() { walls.clear(); }
+
 		/* Draws the maze using openGL calls
 		 */
 		void Draw( int floorTextureNumber, int wallTextureNumber ) const;

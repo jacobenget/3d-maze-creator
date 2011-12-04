@@ -33,6 +33,7 @@ class EditWidget : public QGLWidget
 
 	public:
 		EditWidget( QWidget * parent = NULL );
+		const Maze2D & getMaze() { return maze; }
 
 	protected:
 		virtual void initializeGL();
@@ -41,13 +42,14 @@ class EditWidget : public QGLWidget
 		virtual void mousePressEvent( QMouseEvent * event );
 		virtual void mouseMoveEvent( QMouseEvent * event );
 		virtual void keyPressEvent( QKeyEvent * event );
-		virtual void contextMenuEvent( QContextMenuEvent * event );
 
 	public slots:
 		void openMaze();
 		void setMazeToDefault();
 		void saveMaze();
-		void convertTo3D();
+
+	signals:
+		void mazeEdited( const Maze2D & maze );
 
 	private:
 		Point2D convertPointToCoordinatesSystem( int x, int y );
@@ -69,42 +71,5 @@ class EditWidget : public QGLWidget
 		static const QString mazeFileExtension;
 		static const QString default_maze_file_name;
 };
-
-
-/* Dialog for asking the user for input in what wall width and height
- * they want to use when exporting a 2D maze to 3D
- */
-class WidthHeightDialog : public QDialog
-{
-	Q_OBJECT
-
-	public:
-		WidthHeightDialog( int default_width_, int default_height_, QWidget * parent = NULL );
-
-		int getSelectedWidth();
-		int getSelectedHeight();
-
-	public slots:
-		void checkLineEdits();
-
-	signals:
-		void testSignal();
-
-	private:
-		int default_wall_width;
-		int default_wall_height;
-
-		QLabel * widthLabel;
-		QLineEdit * widthEdit;
-		QLabel * heightLabel;
-		QLineEdit * heightEdit;
-		QPushButton * okButton;
-		QPushButton * cancelButton;
-
-		QGridLayout * gridLayout;
-		QHBoxLayout * horizontalLayout;
-		QVBoxLayout * verticalLayout;
-};
-
 
 #endif /*EDIT2DMAZE_H_*/
