@@ -14,6 +14,10 @@ class MainWindow : public QMainWindow
 		MainWindow();
 
 	public slots:
+		void newMaze();
+		void openFile();
+		void saveFile();
+		void saveAsFile();
 		void respondToMazeChange( const Maze2D & maze2D );
 		void wallWidthChanged( int newWidth );
 		void wallHeightChanged( int newHeight );
@@ -22,12 +26,15 @@ class MainWindow : public QMainWindow
 		void maze3DChanged( const Maze3D * maze3D );
 
 	private:
+		void setCurrentFileName( const QString & fileName );
 		void update3DMaze( const Maze2D & maze2D );
 
 		EditWidget * editWidget;
 		Maze3D maze3D;
 		int wallWidth;
 		int wallHeight;
+
+		QString currentFileName;
 
 	protected:
 		static const int min_wall_width;
@@ -37,6 +44,8 @@ class MainWindow : public QMainWindow
 
 		static const int default_wall_width;
 		static const int default_wall_height;
+
+		static const QString mazeFileExtension;
 };
 
 #endif // MAINWINDOW_H

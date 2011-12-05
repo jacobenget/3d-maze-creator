@@ -13,6 +13,8 @@ const int MainWindow::max_wall_height = 100;
 const int MainWindow::default_wall_width = qBound( min_wall_width, max_wall_width, 10 );
 const int MainWindow::default_wall_height = qBound( min_wall_height, max_wall_height, 50 );
 
+const QString MainWindow::mazeFileExtension = "maze";
+
 
 /* construct a mainwindow with the edit and view widgets along with a few controls
  */
@@ -21,21 +23,25 @@ MainWindow::MainWindow() :
 	wallWidth( default_wall_width ),
 	wallHeight( default_wall_height )
 {
-	setWindowTitle( "Edit/Create your own Maze" );
+	setCurrentFileName( "" );
 
 	// create an editWidget along with a few actions that wil be available in the editWidget's context menu
 	editWidget = new EditWidget;
-	QAction * openMazeAction = new QAction( tr( "Open Maze..." ), this );
-	QAction * saveAction = new QAction( tr( "Save Maze" ), this );
+	QAction * newMazeAction = new QAction( tr( "New" ), this );
+	QAction * openMazeAction = new QAction( tr( "Open" ), this );
+	QAction * saveAction = new QAction( tr( "Save" ), this );
+	QAction * saveAsAction = new QAction( tr( "Save As..." ), this );
 	QAction * clearMazeAction = new QAction( tr( "Clear Maze" ), this );
+	newMazeAction->setShortcut( QKeySequence::New );
 	openMazeAction->setShortcut( QKeySequence::Open );
 	saveAction->setShortcut( QKeySequence::Save );
+	saveAsAction->setShortcut( QKeySequence::SaveAs );
 	clearMazeAction->setShortcut( QKeySequence( Qt::ALT + Qt::Key_C ) );
-	connect( openMazeAction, SIGNAL( triggered() ), editWidget, SLOT( openMaze() ) );
-	connect( saveAction, SIGNAL( triggered() ), editWidget, SLOT( saveMaze() ) );
+	connect( newMazeAction, SIGNAL( triggered() ), this, SLOT( newMaze() ) );
+	connect( openMazeAction, SIGNAL( triggered() ), this, SLOT( openFile() ) );
+	connect( saveAction, SIGNAL( triggered() ), this, SLOT( saveFile() ) );
+	connect( saveAsAction, SIGNAL( triggered() ), this, SLOT( saveAsFile() ) );
 	connect( clearMazeAction, SIGNAL( triggered() ), editWidget, SLOT( setMazeToDefault() ) );
-	editWidget->addAction( openMazeAction );
-	editWidget->addAction( saveAction );
 	editWidget->addAction( clearMazeAction );
 
 	// create an viewWidget along with a few actions that wil be available in the viewWidget's context menu
@@ -62,7 +68,7 @@ MainWindow::MainWindow() :
 	connect( this, SIGNAL( maze3DChanged( const Maze3D * ) ), viewWidget, SLOT( displayMaze3D( const Maze3D * ) ) );
 
 	// respond to the initial maze having been created in the editWidget
-	respondToMazeChange( editWidget->getMaze() );
+	update3DMaze( editWidget->getMaze() );
 
 	QSplitter * splitter = new QSplitter;
 	splitter->addWidget( editWidget );
@@ -96,9 +102,11 @@ MainWindow::MainWindow() :
 
 	// creat the menus used in the application
 	QMenu * fileMenu = menuBar()->addMenu( tr( "&File" ) );
+	fileMenu->addAction( newMazeAction );
 	fileMenu->addAction( openMazeAction );
 	fileMenu->addSeparator();
 	fileMenu->addAction( saveAction );
+	fileMenu->addAction( saveAsAction );
 
 	QMenu * editMenu = menuBar()->addMenu( tr( "&Edit" ) );
 	editMenu->addAction( clearMazeAction );
@@ -110,11 +118,59 @@ MainWindow::MainWindow() :
 	viewMenu->addAction( exploreMazeAction );
 }
 
+void MainWindow::newMaze()
+{
+	editWidget->setMazeToDefault();
+	setCurrentFileName( "" );	// must do this is after clearing the maze ( which marks the maze as modified ),
+								// instead of before, so in the end the application knows the maze is unmodified now
+}
+
+void MainWindow::openFile()
+{
+	QString fileTypes = QString( tr( "Maze Files (*.%1)" ) ).arg( mazeFileExtension );
+	QString newFileName = QFileDialog::getOpenFileName( this, tr( "Open 2D Maze File" ), QDir::currentPath(), fileTypes );
+	if ( !newFileName.isEmpty() ) {
+		setCurrentFileName( newFileName );
+		editWidget->openMaze( newFileName );
+		update3DMaze( editWidget->getMaze() );
+	}
+}
+
+void MainWindow::saveFile()
+{
+	if ( currentFileName.isEmpty() )
+	{
+		saveAsFile();
+	}
+	else
+	{
+		setWindowModified( false );
+		editWidget->saveMaze( currentFileName );
+	}
+}
+
+void MainWindow::saveAsFile()
+{
+	QString fileTypes = QString( tr( "Maze Files (*.%1)" ) ).arg( mazeFileExtension );
+	QFileDialog fileDialog( this, "Save As" );
+	fileDialog.setFileMode( QFileDialog::AnyFile );
+	fileDialog.setNameFilter( fileTypes );
+	fileDialog.setDefaultSuffix( mazeFileExtension );
+	if ( !fileDialog.exec() )
+	{
+		return;
+	}
+
+	setCurrentFileName( fileDialog.selectedFiles().first() );
+	saveFile();
+}
+
 
 /* update the 3D maze when the 2D maze is edited
  */
 void MainWindow::respondToMazeChange( const Maze2D & maze2D )
 {
+	setWindowModified( true );
 	update3DMaze( maze2D );
 }
 
@@ -132,6 +188,18 @@ void MainWindow::wallHeightChanged( int newHeight )
 {
 	wallHeight = newHeight;
 	update3DMaze( editWidget->getMaze() );
+}
+
+void MainWindow::setCurrentFileName( const QString & fileName )
+{
+	currentFileName = fileName;
+	setWindowModified( false );
+	QString shownFileName = tr( "Untitled" );
+	if ( !currentFileName.isEmpty() )
+	{
+		shownFileName = currentFileName;
+	}
+	setWindowTitle( tr( "%1[*] - %2" ).arg( shownFileName ).arg( "3DMaze" ) );
 }
 
 /* update the 3D maze based on the 2D maze and other maze settings

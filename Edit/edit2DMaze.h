@@ -44,9 +44,9 @@ class EditWidget : public QGLWidget
 		virtual void keyPressEvent( QKeyEvent * event );
 
 	public slots:
-		void openMaze();
+		void openMaze( const QString & fileName );
+		void saveMaze( const QString & fileName );
 		void setMazeToDefault();
-		void saveMaze();
 
 	signals:
 		void mazeEdited( const Maze2D & maze );
@@ -58,7 +58,6 @@ class EditWidget : public QGLWidget
 		Point2D lastPointClicked;
 		Point2D mouseCursor;
 		bool drawLineToCursor;
-		QString maze2DfileName;
 		double lineWidth;
 
 		static const QColor walls_color;
@@ -67,9 +66,6 @@ class EditWidget : public QGLWidget
 		static const QColor figure_color;
 
 		static const float maxMazeToAllScreenRatio;
-
-		static const QString mazeFileExtension;
-		static const QString default_maze_file_name;
 };
 
 #endif /*EDIT2DMAZE_H_*/

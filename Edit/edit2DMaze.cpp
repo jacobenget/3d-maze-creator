@@ -22,8 +22,6 @@ const QColor EditWidget::inside_maze_color( 205, 205, 205 );
 const QColor EditWidget::figure_color( 178, 77, 77 );
 
 const float EditWidget::maxMazeToAllScreenRatio = 0.75f;
-const QString EditWidget::mazeFileExtension = "maze";
-const QString EditWidget::default_maze_file_name = "unnamed";
 
 const int exit_success = 0;
 const Qt::Key lift_up_pen_button = Qt::Key_Space;
@@ -32,7 +30,6 @@ EditWidget::EditWidget( QWidget * parent /* = NULL */ ) :
 	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba ), parent ),
 	maze( 450, 450 ),
 	drawLineToCursor( false ),
-	maze2DfileName( default_maze_file_name ),
 	lineWidth( 1.0 ) {
 
 	setMouseTracking( true );	// so the widget can listen to mouse movement when a mouse button isn't down
@@ -198,23 +195,33 @@ void EditWidget::keyPressEvent( QKeyEvent * event )
 
 /* open a maze file
  */
-void EditWidget::openMaze()
+void EditWidget::openMaze( const QString & fileName )
 {
-	QString fileTypes = QString( tr( "Maze Files (*.%1)" ) ).arg( mazeFileExtension );
-	QString newFileName = QFileDialog::getOpenFileName( this, tr( "Open 2D Maze File" ), QDir::currentPath(), fileTypes );
-	if ( !newFileName.isEmpty() ) {
-		maze2DfileName = newFileName;
-		try
-		{
-			LoadFile( maze2DfileName.toStdString(), maze );
-			emit mazeEdited( maze );
-			updateGL();
-		}
-		catch ( UserWishesToExitException & ue )
-		{
-			std::cout << "goodbye";
-			exit( exit_success );
-		}
+	try
+	{
+		LoadFile( fileName.toStdString(), maze );
+		updateGL();
+	}
+	catch ( UserWishesToExitException & ue )
+	{
+		std::cout << "goodbye";
+		exit( exit_success );
+	}
+}
+
+
+/* save the 2D maze out to a file
+ */
+void EditWidget::saveMaze( const QString & fileName )
+{
+	try
+	{
+		WriteFile( fileName.toStdString(), maze );
+	}
+	catch ( UserWishesToExitException & ue )
+	{
+		std::cout << "goodbye";
+		exit( exit_success );
 	}
 }
 
@@ -227,37 +234,6 @@ void EditWidget::setMazeToDefault()
 	maze.clear();
 	emit mazeEdited( maze );
 	updateGL();
-}
-
-
-/* save the 2D maze out to a file
- */
-void EditWidget::saveMaze()
-{
-	if ( maze2DfileName == default_maze_file_name )
-	{
-		QString fileTypes = QString( tr( "Maze Files (*.%1)" ) ).arg( mazeFileExtension );
-		QFileDialog fileDialog( this, "Save Maze File" );
-		fileDialog.setFileMode( QFileDialog::AnyFile );
-		fileDialog.setNameFilter( fileTypes );
-		fileDialog.setDefaultSuffix( mazeFileExtension );
-		if ( !fileDialog.exec() )
-		{
-			return;
-		}
-
-		maze2DfileName = fileDialog.selectedFiles().first();
-	}
-
-	try
-	{
-		WriteFile( maze2DfileName.toStdString(), maze );
-	}
-	catch ( UserWishesToExitException & ue )
-	{
-		std::cout << "goodbye";
-		exit( exit_success );
-	}
 }
 
 
