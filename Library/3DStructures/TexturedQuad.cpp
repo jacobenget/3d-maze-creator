@@ -19,7 +19,7 @@ TexturedQuad::TexturedQuad() :
 	p3Texture(), 
 	p4Texture() {}
 
-TexturedQuad::TexturedQuad( const Quad & rhs, int heightOfTexture, int widthOfTexture )  :
+TexturedQuad::TexturedQuad( const Quad & rhs, int widthOfTexture, int heightOfTexture )  :
 	Quad( rhs ), 
 	p1Texture( 0, rhs.height()/heightOfTexture ), 
 	p2Texture( 0, 0 ), 

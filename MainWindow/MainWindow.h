@@ -21,9 +21,12 @@ class MainWindow : public QMainWindow
 		void respondToMazeChange( const Maze2D & maze2D );
 		void wallWidthChanged( int newWidth );
 		void wallHeightChanged( int newHeight );
+		void replaceWallTexture();
+		void replaceFloorTexture();
+		void exploreMazeInFirstPerson();
 
 	signals:
-		void maze3DChanged( const Maze3D * maze3D );
+		void maze3DChanged( const Maze3D * maze3D, const QImage & floorTexture, const QImage & wallTexture );
 
 	protected:
 		virtual void closeEvent( QCloseEvent * event );
@@ -33,10 +36,14 @@ class MainWindow : public QMainWindow
 		void update3DMaze( const Maze2D & maze2D );
 		bool okToLoseChangesThatExist();
 
+		static QString getOpenImageFileName( QWidget * parent = NULL );
+
 		EditWidget * editWidget;
 		Maze3D maze3D;
 		int wallWidth;
 		int wallHeight;
+		QImage floorTexture;
+		QImage wallsTexture;
 
 		QString currentFileName;
 
@@ -50,6 +57,8 @@ class MainWindow : public QMainWindow
 		static const int default_wall_height;
 
 		static const QString mazeFileExtension;
+		static const QString default_floor_texture_file_name;
+		static const QString default_walls_texture_file_name;
 };
 
 #endif // MAINWINDOW_H

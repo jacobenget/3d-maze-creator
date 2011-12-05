@@ -22,7 +22,7 @@ class TexturedQuad : public Quad
 {
 	public:
 		TexturedQuad();
-		TexturedQuad( const Quad & rhs, int heightOfTexture, int widthOfTexture );
+		TexturedQuad( const Quad & rhs, int widthOfTexture, int heightOfTexture );
 		TexturedQuad( const Quad & rhs, const Point2D & m_tp1, const Point2D & m_tp2, const Point2D & m_tp3, const Point2D & m_tp4 );
 		TexturedQuad( const TexturedQuad & rhs );
 		

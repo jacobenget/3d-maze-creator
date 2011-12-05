@@ -12,9 +12,9 @@
    				 view3DMaze [ 3DMazeFileName [ floorTexture.ppm [ wallTexture.ppm ] ] ]
 */
 
+#include <assert.h>
 
 #include "view3DMaze.h"
-#include "../Explore/explore3DMaze.h"
 
 const QColor ViewWidget::bkgrnd_color( 204, 204, 242 );
 
@@ -32,16 +32,11 @@ const double ViewWidget::fovy_angle_ratio_change = 0.92;
 const double ViewWidget::initial_fovy_angle = 45.0;
 const double ViewWidget::initial_z_coord_of_camera = 1000.0;
 
-const QString ViewWidget::default_floor_texture_file_name = "../SampleTextures/brushed_metal3.ppm";
-const QString ViewWidget::default_walls_texture_file_name = "../SampleTextures/checker_mush.ppm";
-
 const int exit_success = 0;
 const Qt::Key quit_button = Qt::Key_Q;
 
 ViewWidget::ViewWidget( QWidget * parent /* = NULL */ ) :
 	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba | QGL::DepthBuffer ), parent ),
-	floorTexture( default_floor_texture_file_name ),
-	wallsTexture( default_walls_texture_file_name ),
 	floorTextureNumber( 0 ),
 	wallsTextureNumber( 0 ),
 	maze( NULL ),
@@ -72,18 +67,6 @@ ViewWidget::ViewWidget( QWidget * parent /* = NULL */ ) :
 void ViewWidget::initializeGL()
 {
 	glEnable( GL_DEPTH_TEST );
-
-	//load and register the floor texture
-	if ( !floorTexture.isNull() )
-	{
-		floorTextureNumber = bindTexture( floorTexture, GL_TEXTURE_2D );
-	}
-
-	//load and register the walls texture
-	if ( !wallsTexture.isNull() )
-	{
-		wallsTextureNumber = bindTexture( wallsTexture, GL_TEXTURE_2D );
-	}
 }
 
 
@@ -324,6 +307,8 @@ void ViewWidget::computeFrustum()
 	gluLookAt( 0.0, 0.0, stateOfProjection.getCameraZPosition(), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 );
 }
 
+/* reinitialized the maze's translation, scale, and rotation
+ */
 void ViewWidget::initializeTransformation()
 {
 	//set the transformation to be the identity
@@ -334,92 +319,25 @@ void ViewWidget::initializeTransformation()
 	stateOfTransformation.rotateAroundXAxis( -70 );
 }
 
-void ViewWidget::displayMaze3D( const Maze3D * maze3D )
+
+/* update to display the given maze with the images speficifed
+ */
+void ViewWidget::displayMaze3D( const Maze3D * maze3D, const QImage & floorTexture, const QImage & wallsTexture )
 {
+	assert( !floorTexture.isNull() );
+	assert( !wallsTexture.isNull() );
+
+	makeCurrent();
+
 	maze = maze3D;
+
+	// bind the wall and floor textures
+	deleteTexture( floorTextureNumber );
+	floorTextureNumber = bindTexture( floorTexture, GL_TEXTURE_2D );
+	deleteTexture( wallsTextureNumber );
+	wallsTextureNumber = bindTexture( wallsTexture, GL_TEXTURE_2D );
+
 	updateGL();
-}
-
-
-/* lets the user choose a different texture to use as the walls
- */
-void ViewWidget::replaceFloorTexture()
-{
-	// create a list of supported image formats
-	QList< QByteArray > supportedFormats = QImageReader::supportedImageFormats();
-	QString listOfTypes;
-	for ( int i = 0; i < supportedFormats.count(); i++ )
-	{
-		QString supportedFormat = QString( supportedFormats.at( i ) ).toLower();
-		listOfTypes += QString( "*.%1 " ).arg( supportedFormat );
-	}
-
-	// use the list of supported formats to construct an appropriate file filter
-	QString fileTypes = QString( "Image Files (%1)" ).arg( listOfTypes );
-	QString newFloorTextureFileName = QFileDialog::getOpenFileName( this, tr( "Open Floor Texture File" ), QDir::currentPath(), fileTypes );
-	if ( !newFloorTextureFileName.isEmpty() ) {
-		makeCurrent();
-
-		GLuint oldFloorTextureNumber = floorTextureNumber;
-
-		//load and register the floor texture
-		if ( floorTexture.load( newFloorTextureFileName ) )
-		{
-			//unregister the previous floor texture
-			deleteTexture( oldFloorTextureNumber );
-			floorTextureNumber = bindTexture( floorTexture, GL_TEXTURE_2D );
-		}
-		else
-		{
-			floorTextureNumber = oldFloorTextureNumber;
-			QMessageBox::warning( this, tr( "3DMaze" ),
-										tr( "An error occured while trying to open '%1'" ).arg( newFloorTextureFileName ),
-										QMessageBox::Ok );
-		}
-
-		updateGL();
-	}
-}
-
-
-/* lets the user choose a different texture to use as the walls
- */
-void ViewWidget::replaceWallTexture()
-{
-	// create a list of supported image formats
-	QList< QByteArray > supportedFormats = QImageReader::supportedImageFormats();
-	QString listOfTypes;
-	for ( int i = 0; i < supportedFormats.count(); i++ )
-	{
-		QString supportedFormat = QString( supportedFormats.at( i ) ).toLower();
-		listOfTypes += QString( "*.%1 " ).arg( supportedFormat );
-	}
-
-	// use the list of supported formats to construct an appropriate file filter
-	QString fileTypes = QString( "Image Files (%1)" ).arg( listOfTypes );
-	QString newWallTextureFileName = QFileDialog::getOpenFileName( this, tr( "Open Wall Texture File" ), QDir::currentPath(), fileTypes );
-	if ( !newWallTextureFileName.isEmpty() ) {
-		makeCurrent();
-
-		GLuint oldWallsTextureNumber = wallsTextureNumber;
-
-		//load and register the walls texture
-		if ( wallsTexture.load( newWallTextureFileName ) )
-		{
-			//unregister the previous walls texture
-			deleteTexture( oldWallsTextureNumber );
-			wallsTextureNumber = bindTexture( wallsTexture, GL_TEXTURE_2D );
-		}
-		else
-		{
-			wallsTextureNumber = oldWallsTextureNumber;
-			QMessageBox::warning( this, tr( "3DMaze" ),
-										tr( "An error occured while trying to open '%1'" ).arg( newWallTextureFileName ),
-										QMessageBox::Ok );
-		}
-
-		updateGL();
-	}
 }
 
 
@@ -442,27 +360,4 @@ void ViewWidget::reinitializeView()
 	computeFrustum();
 
 	updateGL();
-}
-
-
-/* loads the maze into a model dialog to let the user explore
- */
-void ViewWidget::exploreMaze()
-{
-	if ( maze != NULL ) {
-		QDialog exploreDialog( this, Qt::WindowMaximizeButtonHint );
-
-		QVBoxLayout * layout = new QVBoxLayout;
-		ExploreWidget * exploreWidget = new ExploreWidget( *maze, floorTexture, wallsTexture );
-		layout->addWidget( exploreWidget );
-		layout->setContentsMargins( 0, 0, 0, 0 );
-		exploreDialog.setLayout( layout );
-
-		exploreWidget->setFocus( Qt::PopupFocusReason );
-
-		connect( exploreWidget, SIGNAL( stealMyFocus() ), &exploreDialog, SLOT( setFocus() ) );
-
-		exploreDialog.resize( 400, 400 );
-		exploreDialog.exec();
-	}
 }

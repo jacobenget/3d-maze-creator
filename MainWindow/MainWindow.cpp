@@ -4,6 +4,7 @@
 #include "MainWindow.h"
 #include "../Edit/edit2DMaze.h"
 #include "../View/view3DMaze.h"
+#include "../Explore/explore3DMaze.h"
 
 const int MainWindow::min_wall_width = 8;	// walls any smaller than this and the collision detection code will have to be revisited
 const int MainWindow::max_wall_width = 20;
@@ -14,6 +15,8 @@ const int MainWindow::default_wall_width = qBound( min_wall_width, max_wall_widt
 const int MainWindow::default_wall_height = qBound( min_wall_height, max_wall_height, 50 );
 
 const QString MainWindow::mazeFileExtension = "maze";
+const QString MainWindow::default_floor_texture_file_name = "../SampleTextures/brushed_metal3.ppm";
+const QString MainWindow::default_walls_texture_file_name = "../SampleTextures/checker_mush.ppm";
 
 
 /* construct a mainwindow with the edit and view widgets along with a few controls
@@ -21,7 +24,9 @@ const QString MainWindow::mazeFileExtension = "maze";
 MainWindow::MainWindow() :
 	editWidget( NULL ),
 	wallWidth( default_wall_width ),
-	wallHeight( default_wall_height )
+	wallHeight( default_wall_height ),
+	floorTexture( default_floor_texture_file_name ),
+	wallsTexture( default_walls_texture_file_name )
 {
 	setCurrentFileName( "" );
 
@@ -54,10 +59,10 @@ MainWindow::MainWindow() :
 	replaceWallTextureAction->setShortcut( QKeySequence( Qt::SHIFT + Qt::Key_W ) );
 	reinitializeMazeAction->setShortcut( QKeySequence( Qt::SHIFT + Qt::Key_V ) );
 	exploreMazeAction->setShortcut( QKeySequence( Qt::SHIFT + Qt::Key_E ) );
-	connect( replaceFloorTextureAction, SIGNAL( triggered() ), viewWidget, SLOT( replaceFloorTexture() ) );
-	connect( replaceWallTextureAction, SIGNAL( triggered() ), viewWidget, SLOT( replaceWallTexture() ) );
+	connect( replaceFloorTextureAction, SIGNAL( triggered() ), this, SLOT( replaceFloorTexture() ) );
+	connect( replaceWallTextureAction, SIGNAL( triggered() ), this, SLOT( replaceWallTexture() ) );
 	connect( reinitializeMazeAction, SIGNAL( triggered() ), viewWidget, SLOT( reinitializeView() ) );
-	connect( exploreMazeAction, SIGNAL( triggered() ), viewWidget, SLOT( exploreMaze() ) );
+	connect( exploreMazeAction, SIGNAL( triggered() ), this, SLOT( exploreMazeInFirstPerson() ) );
 	viewWidget->addAction( replaceFloorTextureAction );
 	viewWidget->addAction( replaceWallTextureAction );
 	viewWidget->addAction( reinitializeMazeAction );
@@ -65,7 +70,7 @@ MainWindow::MainWindow() :
 
 	// make sure that this main window knows when the maze is edited in the editWidget, and tells the viewWidget about this when it happens
 	connect( editWidget, SIGNAL( mazeEdited( const Maze2D & ) ), this, SLOT( respondToMazeChange( const Maze2D & ) ) );
-	connect( this, SIGNAL( maze3DChanged( const Maze3D * ) ), viewWidget, SLOT( displayMaze3D( const Maze3D * ) ) );
+	connect( this, SIGNAL( maze3DChanged( const Maze3D *, const QImage &, const QImage & ) ), viewWidget, SLOT( displayMaze3D( const Maze3D *, const QImage &, const QImage & ) ) );
 
 	// respond to the initial maze having been created in the editWidget
 	update3DMaze( editWidget->getMaze() );
@@ -207,6 +212,75 @@ void MainWindow::wallHeightChanged( int newHeight )
 	update3DMaze( editWidget->getMaze() );
 }
 
+
+/* let the user replace the texture that's being used for the floor
+ */
+void MainWindow::replaceFloorTexture()
+{
+	QString newFloorTextureFileName = getOpenImageFileName( this );
+	if ( !newFloorTextureFileName.isEmpty() ) {
+
+		QImage newFloorTexture( newFloorTextureFileName );
+
+		if ( newFloorTexture.isNull() )
+		{
+			QMessageBox::warning( this, tr( "3DMaze" ),
+										tr( "An error occured while trying to open '%1'" ).arg( newFloorTextureFileName ),
+										QMessageBox::Ok );
+		}
+		else
+		{
+			floorTexture = newFloorTexture;
+			update3DMaze( editWidget->getMaze() );
+		}
+	}
+}
+
+
+/* let the user replace the texture that's being used for the walls
+ */
+void MainWindow::replaceWallTexture()
+{
+	QString newWallsTextureFileName = getOpenImageFileName( this );
+	if ( !newWallsTextureFileName.isEmpty() ) {
+
+		QImage newWallsTexture( newWallsTextureFileName );
+
+		if ( newWallsTexture.isNull() )
+		{
+			QMessageBox::warning( this, tr( "3DMaze" ),
+										tr( "An error occured while trying to open '%1'" ).arg( newWallsTextureFileName ),
+										QMessageBox::Ok );
+		}
+		else
+		{
+			wallsTexture = newWallsTexture;
+			update3DMaze( editWidget->getMaze() );
+		}
+	}
+}
+
+
+/* open up a dialog that lets the user explore the maze in first person
+ */
+void MainWindow::exploreMazeInFirstPerson()
+{
+	QDialog exploreDialog( this, Qt::WindowMaximizeButtonHint );
+
+	QVBoxLayout * layout = new QVBoxLayout;
+	ExploreWidget * exploreWidget = new ExploreWidget( maze3D, floorTexture, wallsTexture );
+	layout->addWidget( exploreWidget );
+	layout->setContentsMargins( 0, 0, 0, 0 );
+	exploreDialog.setLayout( layout );
+
+	exploreWidget->setFocus( Qt::PopupFocusReason );
+
+	connect( exploreWidget, SIGNAL( stealMyFocus() ), &exploreDialog, SLOT( setFocus() ) );
+
+	exploreDialog.resize( 400, 400 );
+	exploreDialog.exec();
+}
+
 /* avoid closing if the user doesn't want to lose unsaved changes
  */
 void MainWindow::closeEvent( QCloseEvent * event )
@@ -237,7 +311,12 @@ void MainWindow::setCurrentFileName( const QString & fileName )
  */
 void MainWindow::update3DMaze( const Maze2D & maze2D )
 {
-	const double default_texture_size = 50.0;
+	// assume a 2::1 ratio between texel size and units in world distance
+	// so a 1x1 grid in the world will contain 4 texels
+	const int floorTextureWidth = floorTexture.width() / 2;
+	const int floorTextureHeight = floorTexture.height() / 2;
+	const int wallsTextureWidth = wallsTexture.width() / 2;
+	const int wallsTextureHeight = wallsTexture.height() / 2;
 
 	maze3D.clearWalls();
 
@@ -246,7 +325,7 @@ void MainWindow::update3DMaze( const Maze2D & maze2D )
 	Wall wall;
 	for( int i = 0; i < maze2D.numberOfLines(); i++ )
 	{
-		wall.fitToLine( maze2D.getALine( i ), wallWidth, wallHeight, default_texture_size, default_texture_size );
+		wall.fitToLine( maze2D.getALine( i ), wallWidth, wallHeight, wallsTextureWidth, wallsTextureHeight );
 		maze3D.addAWall( wall );
 	}
 
@@ -257,11 +336,11 @@ void MainWindow::update3DMaze( const Maze2D & maze2D )
 	Point3D bottomRight( ( maze2D.getWidth() / 2.0 ), -( maze2D.getHeight() / 2.0 ), -wallHeight / 2.0 );
 
 	Quad floor( bottomLeft, topLeft, topRight, bottomRight );
-	TexturedQuad tFloor( floor, default_texture_size, default_texture_size );
+	TexturedQuad tFloor( floor, floorTextureWidth, floorTextureHeight );
 
 	maze3D.setFloor( tFloor );
 
-	emit maze3DChanged( &maze3D );
+	emit maze3DChanged( &maze3D, floorTexture, wallsTexture );
 }
 
 /* returns true if either there are not modifications to the current maze
@@ -285,4 +364,23 @@ bool MainWindow::okToLoseChangesThatExist()
 	}
 
 	return true;
+}
+
+
+/* allows the user to select an image file to open, permitting any file formats that QImageReader supports
+ */
+QString MainWindow::getOpenImageFileName( QWidget * parent /*= NULL*/ )
+{
+	// create a list of supported image formats
+	QList< QByteArray > supportedFormats = QImageReader::supportedImageFormats();
+	QString listOfTypes;
+	for ( int i = 0; i < supportedFormats.count(); i++ )
+	{
+		QString supportedFormat = QString( supportedFormats.at( i ) ).toLower();
+		listOfTypes += QString( "*.%1 " ).arg( supportedFormat );
+	}
+
+	// use the list of supported formats to construct an appropriate file filter
+	QString fileTypes = QString( "Image Files (%1)" ).arg( listOfTypes );
+	return QFileDialog::getOpenFileName( parent, tr( "Open Image File" ), QDir::currentPath(), fileTypes );
 }

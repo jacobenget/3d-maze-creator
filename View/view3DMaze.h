@@ -46,18 +46,12 @@ class ViewWidget : public QGLWidget
 		virtual void keyPressEvent( QKeyEvent * event );
 
 	public slots:
-		void displayMaze3D( const Maze3D * maze3D );
-		void replaceFloorTexture();
-		void replaceWallTexture();
+		void displayMaze3D( const Maze3D * maze3D, const QImage & floorTexture, const QImage & wallsTexture );
 		void reinitializeView();
-		void exploreMaze();
 
 	private:
 		void computeFrustum();
 		void initializeTransformation();
-
-		QImage floorTexture;
-		QImage wallsTexture;
 
 		GLuint floorTextureNumber;
 		GLuint wallsTextureNumber;
@@ -87,9 +81,6 @@ class ViewWidget : public QGLWidget
 		static const int distance_between_camera_and_near_clipping_plane = 1;
 		static const int min_z_coord_of_camera = 200;
 		static const int max_z_coord_of_camera = 10000;
-
-		static const QString default_floor_texture_file_name;
-		static const QString default_walls_texture_file_name;
 };
 
 
