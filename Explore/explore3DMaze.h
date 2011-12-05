@@ -42,7 +42,6 @@ class ExploreWidget : public QGLWidget
 		virtual ~ExploreWidget();
 
 	signals:
-		void quit();
 		void stealMyFocus();
 
 	protected:

@@ -35,8 +35,7 @@ const double ExploreWidget::jump_velocity = 3.0;
 //should NOT be larger than the width of the walls divided by incremental_position_change
 const double ExploreWidget::buffer_distance = 2.0;
 
-const Qt::Key ExploreWidget::quit_button = Qt::Key_Q;
-const Qt::Key ExploreWidget::release_focus_button = Qt::Key_Escape;
+const Qt::Key ExploreWidget::release_focus_button = Qt::Key_Q;
 const Qt::Key ExploreWidget::move_forward_button = Qt::Key_W;
 const Qt::Key ExploreWidget::move_backward_button = Qt::Key_S;
 const Qt::Key ExploreWidget::strafe_right_button = Qt::Key_D;
@@ -136,7 +135,7 @@ void ExploreWidget::paintGL()
 	// if this widget has focus then
 	// draw instructions on how to close this widget or force it to release the mouse
 	if ( hasFocus() ) {
-		QKeySequence quitSequence( quit_button );
+		QKeySequence quitSequence( Qt::Key_Escape );
 		QString quitInstructions = QString( "Press %1 to quit exploring" ).arg( quitSequence.toString() );
 		QKeySequence releaseFocusSequence( release_focus_button );
 		QString releaseMouseInstructions = QString( "Press %1 to release the mouse" ).arg( releaseFocusSequence.toString() );
@@ -163,9 +162,6 @@ void ExploreWidget::keyPressEvent( QKeyEvent * event )
 	Qt::Key pressedKey = static_cast< Qt::Key >( event->key() );
 	switch( pressedKey )
 	{
-		case quit_button:			emit quit();
-									break;
-
 		case release_focus_button:	stopHidingCursor();
 									emit stealMyFocus();
 									break;

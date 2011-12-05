@@ -414,7 +414,6 @@ void ViewWidget::exploreMaze()
 
 		exploreWidget->setFocus( Qt::PopupFocusReason );
 
-		connect( exploreWidget, SIGNAL( quit() ), &exploreDialog, SLOT( accept() ) );
 		connect( exploreWidget, SIGNAL( stealMyFocus() ), &exploreDialog, SLOT( setFocus() ) );
 
 		exploreDialog.resize( 400, 400 );
