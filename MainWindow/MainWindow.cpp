@@ -27,20 +27,27 @@ MainWindow::MainWindow() :
 	editWidget = new EditWidget;
 	QAction * openMazeAction = new QAction( tr( "Open Maze..." ), this );
 	QAction * saveAction = new QAction( tr( "Save Maze" ), this );
-	QAction * resetMazeAction = new QAction( tr( "Clear Maze" ), this );
+	QAction * clearMazeAction = new QAction( tr( "Clear Maze" ), this );
+	openMazeAction->setShortcut( QKeySequence::Open );
+	saveAction->setShortcut( QKeySequence::Save );
+	clearMazeAction->setShortcut( QKeySequence( Qt::ALT + Qt::Key_C ) );
 	connect( openMazeAction, SIGNAL( triggered() ), editWidget, SLOT( openMaze() ) );
 	connect( saveAction, SIGNAL( triggered() ), editWidget, SLOT( saveMaze() ) );
-	connect( resetMazeAction, SIGNAL( triggered() ), editWidget, SLOT( setMazeToDefault() ) );
+	connect( clearMazeAction, SIGNAL( triggered() ), editWidget, SLOT( setMazeToDefault() ) );
 	editWidget->addAction( openMazeAction );
 	editWidget->addAction( saveAction );
-	editWidget->addAction( resetMazeAction );
+	editWidget->addAction( clearMazeAction );
 
 	// create an viewWidget along with a few actions that wil be available in the viewWidget's context menu
 	ViewWidget * viewWidget = new ViewWidget;
 	QAction * replaceFloorTextureAction = new QAction( tr( "Replace Floor Texture" ), this );
 	QAction * replaceWallTextureAction = new QAction( tr( "Replace Wall Texture" ), this );
-	QAction * reinitializeMazeAction = new QAction( tr( "Reinitialize" ), this );
-	QAction * exploreMazeAction = new QAction( tr( "Explore..." ), this );
+	QAction * reinitializeMazeAction = new QAction( tr( "Reinitialize View" ), this );
+	QAction * exploreMazeAction = new QAction( tr( "Explore Maze In First Person..." ), this );
+	replaceFloorTextureAction->setShortcut( QKeySequence( Qt::SHIFT + Qt::Key_F ) );
+	replaceWallTextureAction->setShortcut( QKeySequence( Qt::SHIFT + Qt::Key_W ) );
+	reinitializeMazeAction->setShortcut( QKeySequence( Qt::SHIFT + Qt::Key_V ) );
+	exploreMazeAction->setShortcut( QKeySequence( Qt::SHIFT + Qt::Key_E ) );
 	connect( replaceFloorTextureAction, SIGNAL( triggered() ), viewWidget, SLOT( replaceFloorTexture() ) );
 	connect( replaceWallTextureAction, SIGNAL( triggered() ), viewWidget, SLOT( replaceWallTexture() ) );
 	connect( reinitializeMazeAction, SIGNAL( triggered() ), viewWidget, SLOT( reinitializeView() ) );
@@ -86,6 +93,21 @@ MainWindow::MainWindow() :
 
 	setCentralWidget( new QWidget );
 	centralWidget()->setLayout( mainVerticalLayout );
+
+	// creat the menus used in the application
+	QMenu * fileMenu = menuBar()->addMenu( tr( "&File" ) );
+	fileMenu->addAction( openMazeAction );
+	fileMenu->addSeparator();
+	fileMenu->addAction( saveAction );
+
+	QMenu * editMenu = menuBar()->addMenu( tr( "&Edit" ) );
+	editMenu->addAction( clearMazeAction );
+	editMenu->addAction( replaceFloorTextureAction );
+	editMenu->addAction( replaceWallTextureAction );
+
+	QMenu * viewMenu = menuBar()->addMenu( tr( "&View" ) );
+	viewMenu->addAction( reinitializeMazeAction );
+	viewMenu->addAction( exploreMazeAction );
 }
 
 
