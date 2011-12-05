@@ -190,6 +190,7 @@ void EditWidget::keyPressEvent( QKeyEvent * event )
 			break;
 
 		default:
+			QGLWidget::keyPressEvent( event );
 			break;
 	}
 }

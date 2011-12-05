@@ -121,6 +121,10 @@ void ViewWidget::keyPressEvent( QKeyEvent * event )
 	{
 		exit( exit_success );
 	}
+	else
+	{
+		QGLWidget::keyPressEvent( event );
+	}
 }
 
 

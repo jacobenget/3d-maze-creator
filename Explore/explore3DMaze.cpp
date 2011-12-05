@@ -191,7 +191,8 @@ void ExploreWidget::keyPressEvent( QKeyEvent * event )
 		case jump_button:			stateOfTransformationFP.jump();
 									break;
 									
-		default:					break;
+		default:					QGLWidget::keyPressEvent( event );
+									break;
 	}
 	updateGL();
 }
@@ -224,7 +225,8 @@ void ExploreWidget::keyReleaseEvent( QKeyEvent * event )
 		case zoom_in_button: 		stateOfUserInteractionFP.setZoomingIn( false );
 									break;
 									
-		default:					break;
+	default:						QGLWidget::keyReleaseEvent( event );
+									break;
 	}
 	updateGL();
 }
