@@ -207,6 +207,20 @@ void MainWindow::wallHeightChanged( int newHeight )
 	update3DMaze( editWidget->getMaze() );
 }
 
+/* avoid closing if the user doesn't want to lose unsaved changes
+ */
+void MainWindow::closeEvent( QCloseEvent * event )
+{
+	if ( okToLoseChangesThatExist() )
+	{
+		event->accept();
+	}
+	else
+	{
+		event->ignore();
+	}
+}
+
 void MainWindow::setCurrentFileName( const QString & fileName )
 {
 	currentFileName = fileName;

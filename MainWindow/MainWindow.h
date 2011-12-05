@@ -25,6 +25,9 @@ class MainWindow : public QMainWindow
 	signals:
 		void maze3DChanged( const Maze3D * maze3D );
 
+	protected:
+		virtual void closeEvent( QCloseEvent * event );
+
 	private:
 		void setCurrentFileName( const QString & fileName );
 		void update3DMaze( const Maze2D & maze2D );
