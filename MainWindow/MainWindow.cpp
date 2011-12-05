@@ -15,8 +15,8 @@ const int MainWindow::default_wall_width = qBound( min_wall_width, max_wall_widt
 const int MainWindow::default_wall_height = qBound( min_wall_height, max_wall_height, 50 );
 
 const QString MainWindow::mazeFileExtension = "maze";
-const QString MainWindow::default_floor_texture_file_name = "../SampleTextures/brushed_metal3.ppm";
-const QString MainWindow::default_walls_texture_file_name = "../SampleTextures/checker_mush.ppm";
+const QString MainWindow::default_floor_texture_file_name = ":/defaultFloorTexture.ppm";
+const QString MainWindow::default_walls_texture_file_name = ":/defaultWallsTexture.ppm";
 
 
 /* construct a mainwindow with the edit and view widgets along with a few controls

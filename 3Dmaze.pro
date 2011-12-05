@@ -7,11 +7,7 @@
 QT       += core gui opengl
 CONFIG   += warn_on
 
-DESTDIR = build
-OBJECTS_DIR = build/.obj
-MOC_DIR = build/.moc
-RCC_DIR = build/.rcc
-UI_DIR = build/.ui
+RESOURCES = application.qrc
 
 TARGET = 3Dmaze
 TEMPLATE = app

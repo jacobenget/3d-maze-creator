@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="defaultFloorTexture.ppm">SampleTextures/brushed_metal3.ppm</file>
+        <file alias="defaultWallsTexture.ppm">SampleTextures/checker_mush.ppm</file>
+    </qresource>
+</RCC>
