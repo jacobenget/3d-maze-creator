@@ -194,36 +194,52 @@ void EditWidget::keyPressEvent( QKeyEvent * event )
 
 
 /* open a maze file
+ * return true if the open was succeessful
  */
-void EditWidget::openMaze( const QString & fileName )
+bool EditWidget::openMaze( const QString & fileName )
 {
+	bool openWasSuccessful = true;
 	try
 	{
-		LoadFile( fileName.toStdString(), maze );
+		FileHandler File( fileName.toStdString() );
+		File.ReadFromFile( maze );
 		drawLineToCursor = false;
 		updateGL();
 	}
-	catch ( UserWishesToExitException & ue )
+	catch ( IOError & ioe )
 	{
-		std::cout << "goodbye";
-		exit( exit_success );
+		QMessageBox::warning( this, tr( "3DMaze" ),
+									tr( "An error occured while trying to open '%1'" ).arg( fileName ),
+									QMessageBox::Ok );
+
+		openWasSuccessful = false;
 	}
+
+	return openWasSuccessful;
 }
 
 
 /* save the 2D maze out to a file
+ * return true if the save was succeessful
  */
-void EditWidget::saveMaze( const QString & fileName )
+bool EditWidget::saveMaze( const QString & fileName )
 {
+	bool saveWasSuccessful = true;
 	try
 	{
-		WriteFile( fileName.toStdString(), maze );
+		FileHandler File( fileName.toStdString() );
+		File.WriteToFile( maze );
 	}
-	catch ( UserWishesToExitException & ue )
+	catch ( IOError & ioe )
 	{
-		std::cout << "goodbye";
-		exit( exit_success );
+		QMessageBox::warning( this, tr( "3DMaze" ),
+									tr( "An error occured while trying to save '%1'" ).arg( fileName ),
+									QMessageBox::Ok );
+
+		saveWasSuccessful = false;
 	}
+
+	return saveWasSuccessful;
 }
 
 

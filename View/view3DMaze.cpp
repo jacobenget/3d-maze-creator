@@ -72,12 +72,28 @@ void ViewWidget::initializeGL()
 	glEnable( GL_DEPTH_TEST );
 
 	//load and register the floor texture
-	LoadFile( default_floor_texture_file_name.toStdString(), floorTexture );
-	floorTextureNumber = RegisterTexture( floorTexture );
+	try
+	{
+		FileHandler File( default_floor_texture_file_name.toStdString() );
+		File.ReadFromFile( floorTexture );
+		floorTextureNumber = RegisterTexture( floorTexture );
+	}
+	catch ( IOError ioe )
+	{
+		floorTextureNumber = 0;
+	}
 
 	//load and register the walls texture
-	LoadFile( default_walls_texture_file_name.toStdString(), wallsTexture );
-	wallsTextureNumber = RegisterTexture( wallsTexture );
+	try
+	{
+		FileHandler File( default_walls_texture_file_name.toStdString() );
+		File.ReadFromFile( wallsTexture );
+		wallsTextureNumber = RegisterTexture( wallsTexture );
+	}
+	catch ( IOError ioe )
+	{
+		wallsTextureNumber = 0;
+	}
 }
 
 
@@ -344,12 +360,28 @@ void ViewWidget::replaceFloorTexture()
 	if ( !newFloorTextureFileName.isEmpty() ) {
 		makeCurrent();
 
-		//unregister the previous floor texture
-		glDeleteTextures( 1, &floorTextureNumber );
+		GLuint oldFloorTextureNumber = floorTextureNumber;
 
 		//load and register the floor texture
-		LoadFile( newFloorTextureFileName.toStdString(), floorTexture );
-		floorTextureNumber = RegisterTexture( floorTexture );
+		try
+		{
+			FileHandler File( newFloorTextureFileName.toStdString() );
+			File.ReadFromFile( floorTexture );
+			floorTextureNumber = RegisterTexture( floorTexture );
+		}
+		catch ( IOError ioe )
+		{
+			QMessageBox::warning( this, tr( "3DMaze" ),
+										tr( "An error occured while trying to open '%1'" ).arg( newFloorTextureFileName ),
+										QMessageBox::Ok );
+			floorTextureNumber = oldFloorTextureNumber;
+		}
+
+		if ( floorTextureNumber != oldFloorTextureNumber )
+		{
+			//unregister the previous floor texture
+			glDeleteTextures( 1, &oldFloorTextureNumber );
+		}
 
 		updateGL();
 	}
@@ -365,12 +397,28 @@ void ViewWidget::replaceWallTexture()
 	if ( !newWallTextureFileName.isEmpty() ) {
 		makeCurrent();
 
-		//unregister the previous walls texture
-		glDeleteTextures( 1, &wallsTextureNumber );
+		GLuint oldWallsTextureNumber = wallsTextureNumber;
 
 		//load and register the walls texture
-		LoadFile( newWallTextureFileName.toStdString(), wallsTexture );
-		wallsTextureNumber = RegisterTexture( wallsTexture );
+		try
+		{
+			FileHandler File( newWallTextureFileName.toStdString() );
+			File.ReadFromFile( wallsTexture );
+			wallsTextureNumber = RegisterTexture( wallsTexture );
+		}
+		catch ( IOError ioe )
+		{
+			QMessageBox::warning( this, tr( "3DMaze" ),
+										tr( "An error occured while trying to open '%1'" ).arg( newWallTextureFileName ),
+										QMessageBox::Ok );
+			wallsTextureNumber = oldWallsTextureNumber;
+		}
+
+		if ( wallsTextureNumber != oldWallsTextureNumber )
+		{
+			//unregister the previous walls texture
+			glDeleteTextures( 1, &oldWallsTextureNumber );
+		}
 
 		updateGL();
 	}

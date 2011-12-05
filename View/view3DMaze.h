@@ -28,9 +28,8 @@
 #include "ProjectionState.h"
 #include "UserInteractionState.h"
 #include "TransformationState.h"
-#include "LoadFile.h"
 #include "RegisterTexture.h"
-#include "UserWishesToExitException.h"
+#include "FileHandler.h"
 
 class ViewWidget : public QGLWidget
 {

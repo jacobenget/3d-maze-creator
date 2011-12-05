@@ -23,9 +23,7 @@
 #include "Point2D.h"
 #include "LineSegment2D.h"
 #include "Maze2D.h"
-#include "FileHandler.h" 
-#include "LoadFile.h"  
-#include "WriteFile.h"
+#include "FileHandler.h"
 
 class EditWidget : public QGLWidget
 {
@@ -44,8 +42,8 @@ class EditWidget : public QGLWidget
 		virtual void keyPressEvent( QKeyEvent * event );
 
 	public slots:
-		void openMaze( const QString & fileName );
-		void saveMaze( const QString & fileName );
+		bool openMaze( const QString & fileName );
+		bool saveMaze( const QString & fileName );
 		void setMazeToDefault();
 
 	signals:

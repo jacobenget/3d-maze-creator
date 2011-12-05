@@ -29,7 +29,6 @@
 #include "ProjectionState.h"
 #include "TransformationStateFP.h"
 #include "UserInteractionStateFP.h"
-#include "LoadFile.h"
 #include "RegisterTexture.h"
 #include "FramesPerSecondController.h"
 

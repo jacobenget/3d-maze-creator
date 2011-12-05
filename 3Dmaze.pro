@@ -31,8 +31,6 @@ SOURCES +=\
     Library/3DStructures/Quad.cpp \
     Library/3DStructures/Point3D.cpp \
     Library/3DStructures/Maze3D.cpp \
-    Library/IOControl/WriteFile.cpp \
-    Library/IOControl/LoadFile.cpp \
     Library/IOControl/FileHandler.cpp \
     Library/UserInteraction/UserInteractionStateFP.cpp \
     Library/UserInteraction/UserInteractionState.cpp \
@@ -60,10 +58,7 @@ HEADERS  += \
     Library/3DStructures/Quad.h \
     Library/3DStructures/Point3D.h \
     Library/3DStructures/Maze3D.h \
-    Library/IOControl/WriteFile.h \
-    Library/IOControl/UserWishesToExitException.h \
     Library/IOControl/Serializable.h \
-    Library/IOControl/LoadFile.h \
     Library/IOControl/IOError.h \
     Library/IOControl/FileHandler.h \
     Library/UserInteraction/UserInteractionStateFP.h \

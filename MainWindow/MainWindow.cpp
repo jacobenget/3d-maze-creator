@@ -135,9 +135,12 @@ void MainWindow::openFile()
 		QString fileTypes = QString( tr( "Maze Files (*.%1)" ) ).arg( mazeFileExtension );
 		QString newFileName = QFileDialog::getOpenFileName( this, tr( "Open 2D Maze File" ), QDir::currentPath(), fileTypes );
 		if ( !newFileName.isEmpty() ) {
-			setCurrentFileName( newFileName );
-			editWidget->openMaze( newFileName );
-			update3DMaze( editWidget->getMaze() );
+			bool openSucceeded = editWidget->openMaze( newFileName );
+			if ( openSucceeded )
+			{
+				setCurrentFileName( newFileName );
+				update3DMaze( editWidget->getMaze() );
+			}
 		}
 	}
 }
@@ -152,9 +155,12 @@ bool MainWindow::saveFile()
 	}
 	else
 	{
-		setWindowModified( false );
-		editWidget->saveMaze( currentFileName );
-		return true;
+		bool saveSucceeded = editWidget->saveMaze( currentFileName );
+		if ( saveSucceeded )
+		{
+			setWindowModified( false );
+		}
+		return saveSucceeded;
 	}
 }
 
