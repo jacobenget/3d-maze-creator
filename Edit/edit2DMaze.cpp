@@ -200,6 +200,7 @@ void EditWidget::openMaze( const QString & fileName )
 	try
 	{
 		LoadFile( fileName.toStdString(), maze );
+		drawLineToCursor = false;
 		updateGL();
 	}
 	catch ( UserWishesToExitException & ue )
@@ -232,6 +233,7 @@ void EditWidget::saveMaze( const QString & fileName )
 void EditWidget::setMazeToDefault()
 {
 	maze.clear();
+	drawLineToCursor = false;
 	emit mazeEdited( maze );
 	updateGL();
 }
