@@ -16,8 +16,8 @@ class MainWindow : public QMainWindow
 	public slots:
 		void newMaze();
 		void openFile();
-		void saveFile();
-		void saveAsFile();
+		bool saveFile();
+		bool saveAsFile();
 		void respondToMazeChange( const Maze2D & maze2D );
 		void wallWidthChanged( int newWidth );
 		void wallHeightChanged( int newHeight );
@@ -28,6 +28,7 @@ class MainWindow : public QMainWindow
 	private:
 		void setCurrentFileName( const QString & fileName );
 		void update3DMaze( const Maze2D & maze2D );
+		bool okToLoseChangesThatExist();
 
 		EditWidget * editWidget;
 		Maze3D maze3D;

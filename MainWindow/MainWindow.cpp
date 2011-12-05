@@ -120,36 +120,47 @@ MainWindow::MainWindow() :
 
 void MainWindow::newMaze()
 {
-	editWidget->setMazeToDefault();
-	setCurrentFileName( "" );	// must do this is after clearing the maze ( which marks the maze as modified ),
-								// instead of before, so in the end the application knows the maze is unmodified now
+	if ( okToLoseChangesThatExist() )
+	{
+		editWidget->setMazeToDefault();
+		setCurrentFileName( "" );	// must do this is after clearing the maze ( which marks the maze as modified ),
+									// instead of before, so in the end the application knows the maze is unmodified now
+	}
 }
 
 void MainWindow::openFile()
 {
-	QString fileTypes = QString( tr( "Maze Files (*.%1)" ) ).arg( mazeFileExtension );
-	QString newFileName = QFileDialog::getOpenFileName( this, tr( "Open 2D Maze File" ), QDir::currentPath(), fileTypes );
-	if ( !newFileName.isEmpty() ) {
-		setCurrentFileName( newFileName );
-		editWidget->openMaze( newFileName );
-		update3DMaze( editWidget->getMaze() );
+	if ( okToLoseChangesThatExist() )
+	{
+		QString fileTypes = QString( tr( "Maze Files (*.%1)" ) ).arg( mazeFileExtension );
+		QString newFileName = QFileDialog::getOpenFileName( this, tr( "Open 2D Maze File" ), QDir::currentPath(), fileTypes );
+		if ( !newFileName.isEmpty() ) {
+			setCurrentFileName( newFileName );
+			editWidget->openMaze( newFileName );
+			update3DMaze( editWidget->getMaze() );
+		}
 	}
 }
 
-void MainWindow::saveFile()
+/* returns true only if the file was actually saved
+ */
+bool MainWindow::saveFile()
 {
 	if ( currentFileName.isEmpty() )
 	{
-		saveAsFile();
+		return saveAsFile();
 	}
 	else
 	{
 		setWindowModified( false );
 		editWidget->saveMaze( currentFileName );
+		return true;
 	}
 }
 
-void MainWindow::saveAsFile()
+/* returns true only if the file was actually saved
+ */
+bool MainWindow::saveAsFile()
 {
 	QString fileTypes = QString( tr( "Maze Files (*.%1)" ) ).arg( mazeFileExtension );
 	QFileDialog fileDialog( this, "Save As" );
@@ -158,11 +169,11 @@ void MainWindow::saveAsFile()
 	fileDialog.setDefaultSuffix( mazeFileExtension );
 	if ( !fileDialog.exec() )
 	{
-		return;
+		return false;
 	}
 
 	setCurrentFileName( fileDialog.selectedFiles().first() );
-	saveFile();
+	return saveFile();
 }
 
 
@@ -197,7 +208,7 @@ void MainWindow::setCurrentFileName( const QString & fileName )
 	QString shownFileName = tr( "Untitled" );
 	if ( !currentFileName.isEmpty() )
 	{
-		shownFileName = currentFileName;
+		shownFileName = QFileInfo( currentFileName ).fileName();
 	}
 	setWindowTitle( tr( "%1[*] - %2" ).arg( shownFileName ).arg( "3DMaze" ) );
 }
@@ -231,4 +242,27 @@ void MainWindow::update3DMaze( const Maze2D & maze2D )
 	maze3D.setFloor( tFloor );
 
 	emit maze3DChanged( &maze3D );
+}
+
+/* returns true if either there are not modifications to the current maze
+ * or the user doesn't mind losing the modifications that exist
+ */
+bool MainWindow::okToLoseChangesThatExist()
+{
+	if ( isWindowModified() )
+	{
+		int result = QMessageBox::warning( this, tr( "3DMaze" ), tr( "This document has been modified.\n"
+																	 "Do you want to save your changes?" ),
+																	 QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel );
+		if ( result == QMessageBox::Yes )
+		{
+			return saveFile();
+		}
+		else if ( result == QMessageBox::Cancel )
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
