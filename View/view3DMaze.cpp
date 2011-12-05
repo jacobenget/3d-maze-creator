@@ -40,6 +40,8 @@ const Qt::Key quit_button = Qt::Key_Q;
 
 ViewWidget::ViewWidget( QWidget * parent /* = NULL */ ) :
 	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba | QGL::DepthBuffer ), parent ),
+	floorTexture( default_floor_texture_file_name ),
+	wallsTexture( default_walls_texture_file_name ),
 	floorTextureNumber( 0 ),
 	wallsTextureNumber( 0 ),
 	maze( NULL ),
@@ -72,27 +74,15 @@ void ViewWidget::initializeGL()
 	glEnable( GL_DEPTH_TEST );
 
 	//load and register the floor texture
-	try
+	if ( !floorTexture.isNull() )
 	{
-		FileHandler File( default_floor_texture_file_name.toStdString() );
-		File.ReadFromFile( floorTexture );
-		floorTextureNumber = RegisterTexture( floorTexture );
-	}
-	catch ( IOError ioe )
-	{
-		floorTextureNumber = 0;
+		floorTextureNumber = bindTexture( floorTexture, GL_TEXTURE_2D );
 	}
 
 	//load and register the walls texture
-	try
+	if ( !wallsTexture.isNull() )
 	{
-		FileHandler File( default_walls_texture_file_name.toStdString() );
-		File.ReadFromFile( wallsTexture );
-		wallsTextureNumber = RegisterTexture( wallsTexture );
-	}
-	catch ( IOError ioe )
-	{
-		wallsTextureNumber = 0;
+		wallsTextureNumber = bindTexture( wallsTexture, GL_TEXTURE_2D );
 	}
 }
 
@@ -355,7 +345,17 @@ void ViewWidget::displayMaze3D( const Maze3D * maze3D )
  */
 void ViewWidget::replaceFloorTexture()
 {
-	QString fileTypes( "PPM Files (*.ppm)" );
+	// create a list of supported image formats
+	QList< QByteArray > supportedFormats = QImageReader::supportedImageFormats();
+	QString listOfTypes;
+	for ( int i = 0; i < supportedFormats.count(); i++ )
+	{
+		QString supportedFormat = QString( supportedFormats.at( i ) ).toLower();
+		listOfTypes += QString( "*.%1 " ).arg( supportedFormat );
+	}
+
+	// use the list of supported formats to construct an appropriate file filter
+	QString fileTypes = QString( "Image Files (%1)" ).arg( listOfTypes );
 	QString newFloorTextureFileName = QFileDialog::getOpenFileName( this, tr( "Open Floor Texture File" ), QDir::currentPath(), fileTypes );
 	if ( !newFloorTextureFileName.isEmpty() ) {
 		makeCurrent();
@@ -363,24 +363,18 @@ void ViewWidget::replaceFloorTexture()
 		GLuint oldFloorTextureNumber = floorTextureNumber;
 
 		//load and register the floor texture
-		try
+		if ( floorTexture.load( newFloorTextureFileName ) )
 		{
-			FileHandler File( newFloorTextureFileName.toStdString() );
-			File.ReadFromFile( floorTexture );
-			floorTextureNumber = RegisterTexture( floorTexture );
+			//unregister the previous floor texture
+			deleteTexture( oldFloorTextureNumber );
+			floorTextureNumber = bindTexture( floorTexture, GL_TEXTURE_2D );
 		}
-		catch ( IOError ioe )
+		else
 		{
+			floorTextureNumber = oldFloorTextureNumber;
 			QMessageBox::warning( this, tr( "3DMaze" ),
 										tr( "An error occured while trying to open '%1'" ).arg( newFloorTextureFileName ),
 										QMessageBox::Ok );
-			floorTextureNumber = oldFloorTextureNumber;
-		}
-
-		if ( floorTextureNumber != oldFloorTextureNumber )
-		{
-			//unregister the previous floor texture
-			glDeleteTextures( 1, &oldFloorTextureNumber );
 		}
 
 		updateGL();
@@ -392,7 +386,17 @@ void ViewWidget::replaceFloorTexture()
  */
 void ViewWidget::replaceWallTexture()
 {
-	QString fileTypes( "PPM Files (*.ppm)" );
+	// create a list of supported image formats
+	QList< QByteArray > supportedFormats = QImageReader::supportedImageFormats();
+	QString listOfTypes;
+	for ( int i = 0; i < supportedFormats.count(); i++ )
+	{
+		QString supportedFormat = QString( supportedFormats.at( i ) ).toLower();
+		listOfTypes += QString( "*.%1 " ).arg( supportedFormat );
+	}
+
+	// use the list of supported formats to construct an appropriate file filter
+	QString fileTypes = QString( "Image Files (%1)" ).arg( listOfTypes );
 	QString newWallTextureFileName = QFileDialog::getOpenFileName( this, tr( "Open Wall Texture File" ), QDir::currentPath(), fileTypes );
 	if ( !newWallTextureFileName.isEmpty() ) {
 		makeCurrent();
@@ -400,24 +404,18 @@ void ViewWidget::replaceWallTexture()
 		GLuint oldWallsTextureNumber = wallsTextureNumber;
 
 		//load and register the walls texture
-		try
+		if ( wallsTexture.load( newWallTextureFileName ) )
 		{
-			FileHandler File( newWallTextureFileName.toStdString() );
-			File.ReadFromFile( wallsTexture );
-			wallsTextureNumber = RegisterTexture( wallsTexture );
+			//unregister the previous walls texture
+			deleteTexture( oldWallsTextureNumber );
+			wallsTextureNumber = bindTexture( wallsTexture, GL_TEXTURE_2D );
 		}
-		catch ( IOError ioe )
+		else
 		{
+			wallsTextureNumber = oldWallsTextureNumber;
 			QMessageBox::warning( this, tr( "3DMaze" ),
 										tr( "An error occured while trying to open '%1'" ).arg( newWallTextureFileName ),
 										QMessageBox::Ok );
-			wallsTextureNumber = oldWallsTextureNumber;
-		}
-
-		if ( wallsTextureNumber != oldWallsTextureNumber )
-		{
-			//unregister the previous walls texture
-			glDeleteTextures( 1, &oldWallsTextureNumber );
 		}
 
 		updateGL();

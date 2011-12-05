@@ -24,11 +24,9 @@
 #include <math.h>
 
 #include "Maze3D.h"
-#include "PPMTexture.h"
 #include "ProjectionState.h"
 #include "UserInteractionState.h"
 #include "TransformationState.h"
-#include "RegisterTexture.h"
 #include "FileHandler.h"
 
 class ViewWidget : public QGLWidget
@@ -58,8 +56,8 @@ class ViewWidget : public QGLWidget
 		void computeFrustum();
 		void initializeTransformation();
 
-		PPMTexture floorTexture;
-		PPMTexture wallsTexture;
+		QImage floorTexture;
+		QImage wallsTexture;
 
 		GLuint floorTextureNumber;
 		GLuint wallsTextureNumber;

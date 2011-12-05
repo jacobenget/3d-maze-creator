@@ -45,7 +45,7 @@ const Qt::Key ExploreWidget::zoom_in_button = Qt::Key_C;
 const Qt::Key ExploreWidget::zoom_out_button = Qt::Key_R;
 
 
-ExploreWidget::ExploreWidget( const Maze3D & maze_, const PPMTexture & floorTexture_, const PPMTexture & wallsTexture_, QWidget * parent /*= NULL*/ ) :
+ExploreWidget::ExploreWidget( const Maze3D & maze_, const QImage & floorTexture_, const QImage & wallsTexture_, QWidget * parent /*= NULL*/ ) :
 	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba | QGL::DepthBuffer ), parent ),
 	maze( maze_ ),
 	floorTexture( floorTexture_ ),
@@ -80,10 +80,10 @@ void ExploreWidget::initializeGL()
 	glEnable( GL_DEPTH_TEST );
 
 	//register the floor texture
-	floorTextureNumber = RegisterTexture( floorTexture );
+	floorTextureNumber = bindTexture( floorTexture, GL_TEXTURE_2D );
 
 	//register the wall texture
-	wallsTextureNumber = RegisterTexture( wallsTexture );
+	wallsTextureNumber = bindTexture( wallsTexture, GL_TEXTURE_2D );
 
 	// set up a timer to control the frame rate
 	QTimer * redrawTimer = new QTimer( this );

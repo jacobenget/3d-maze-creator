@@ -25,11 +25,9 @@
 #include <ctime>
 
 #include "Maze3D.h"
-#include "PPMTexture.h"
 #include "ProjectionState.h"
 #include "TransformationStateFP.h"
 #include "UserInteractionStateFP.h"
-#include "RegisterTexture.h"
 #include "FramesPerSecondController.h"
 
 class ExploreWidget : public QGLWidget
@@ -37,7 +35,7 @@ class ExploreWidget : public QGLWidget
 	Q_OBJECT
 
 	public:
-		ExploreWidget( const Maze3D & maze, const PPMTexture & floorTexture_, const PPMTexture & wallsTexture_, QWidget * parent = NULL );
+		ExploreWidget( const Maze3D & maze, const QImage & floorTexture_, const QImage & wallsTexture_, QWidget * parent = NULL );
 		virtual ~ExploreWidget();
 
 	signals:
@@ -59,8 +57,8 @@ class ExploreWidget : public QGLWidget
 
 		const Maze3D & maze;
 
-		const PPMTexture & floorTexture;
-		const PPMTexture & wallsTexture;
+		const QImage & floorTexture;
+		const QImage & wallsTexture;
 
 		GLuint floorTextureNumber;
 		GLuint wallsTextureNumber;

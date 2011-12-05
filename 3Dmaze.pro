@@ -38,8 +38,6 @@ SOURCES +=\
     Library/UserInteraction/TransformationState.cpp \
     Library/UserInteraction/TransformationMatrix.cpp \
     Library/UserInteraction/ProjectionState.cpp \
-    Library/Util/RegisterTexture.cpp \
-    Library/Util/PPMTexture.cpp \
     Library/Util/FramesPerSecondController.cpp \
 	Library/Util/ConversionFunctions.cpp \
     Edit/edit2DMaze.cpp \
@@ -67,8 +65,6 @@ HEADERS  += \
     Library/UserInteraction/TransformationState.h \
     Library/UserInteraction/TransformationMatrix.h \
     Library/UserInteraction/ProjectionState.h \
-    Library/Util/RegisterTexture.h \
-    Library/Util/PPMTexture.h \
     Library/Util/FramesPerSecondController.h \
     Library/Util/ConversionFunctions.h \
 	Library/Util/BoundsCheckingContainer.h \
