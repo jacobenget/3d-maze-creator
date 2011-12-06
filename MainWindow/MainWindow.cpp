@@ -1,3 +1,12 @@
+/*
+   Project     : 3DMaze
+   File        : MainWindow.cpp
+   Author      : Jacob Enget  (jacob.enget@gmail.com)
+
+   Description : contains the definition for MainWindow,
+				 which is a main window that contains widgets for editing, viewing, and exploring a 3dmaze
+*/
+
 
 #include <algorithm>
 
@@ -105,7 +114,7 @@ MainWindow::MainWindow() :
 	setCentralWidget( new QWidget );
 	centralWidget()->setLayout( mainVerticalLayout );
 
-	// creat the menus used in the application
+	// creat the main menus used in the application
 	QMenu * fileMenu = menuBar()->addMenu( tr( "&File" ) );
 	fileMenu->addAction( newMazeAction );
 	fileMenu->addAction( openMazeAction );
@@ -123,6 +132,9 @@ MainWindow::MainWindow() :
 	viewMenu->addAction( exploreMazeAction );
 }
 
+
+/* create a new maze that's empty and untitled
+ */
 void MainWindow::newMaze()
 {
 	if ( okToLoseChangesThatExist() )
@@ -133,6 +145,9 @@ void MainWindow::newMaze()
 	}
 }
 
+
+/* open a file conaining a 2D maze definition
+ */
 void MainWindow::openFile()
 {
 	if ( okToLoseChangesThatExist() )
@@ -149,6 +164,7 @@ void MainWindow::openFile()
 		}
 	}
 }
+
 
 /* returns true only if the file was actually saved
  */
@@ -168,6 +184,7 @@ bool MainWindow::saveFile()
 		return saveSucceeded;
 	}
 }
+
 
 /* returns true only if the file was actually saved
  */
@@ -196,6 +213,7 @@ void MainWindow::respondToMazeChange( const Maze2D & maze2D )
 	update3DMaze( maze2D );
 }
 
+
 /* respond to a wall width change
  */
 void MainWindow::wallWidthChanged( int newWidth )
@@ -203,6 +221,7 @@ void MainWindow::wallWidthChanged( int newWidth )
 	wallWidth = newWidth;
 	update3DMaze( editWidget->getMaze() );
 }
+
 
 /* respond to a wall height change
  */
@@ -281,6 +300,7 @@ void MainWindow::exploreMazeInFirstPerson()
 	exploreDialog.exec();
 }
 
+
 /* avoid closing if the user doesn't want to lose unsaved changes
  */
 void MainWindow::closeEvent( QCloseEvent * event )
@@ -295,6 +315,10 @@ void MainWindow::closeEvent( QCloseEvent * event )
 	}
 }
 
+
+/* store the currently open file's name and
+ * update the application's title bar to match
+ */
 void MainWindow::setCurrentFileName( const QString & fileName )
 {
 	currentFileName = fileName;
@@ -306,6 +330,7 @@ void MainWindow::setCurrentFileName( const QString & fileName )
 	}
 	setWindowTitle( tr( "%1[*] - %2" ).arg( shownFileName ).arg( "3DMaze" ) );
 }
+
 
 /* update the 3D maze based on the 2D maze and other maze settings
  */
@@ -342,6 +367,7 @@ void MainWindow::update3DMaze( const Maze2D & maze2D )
 
 	emit maze3DChanged( &maze3D, floorTexture, wallsTexture );
 }
+
 
 /* returns true if either there are not modifications to the current maze
  * or the user doesn't mind losing the modifications that exist

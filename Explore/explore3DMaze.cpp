@@ -3,13 +3,9 @@
    File        : explore3DMaze.cpp
    Author      : Jacob Enget  (jacob.enget@gmail.com)
 
-   Description : Main function for exploring a 3D-maze
-   				 after applying textures to its walls and floors
-   				 
-   				 
-   				 command line syntax:
-   				 
-   				 explore3DMaze [ 3DMazeFileName [ floorTexture.ppm [ wallTexture.ppm ] ] ]
+   Description : contains the definition for ExploreWidget,
+				 which is used for exploring a 3D maze in first-person view
+				 with basic WASD move controls and mouse-look
 */
 
 
@@ -69,6 +65,9 @@ ExploreWidget::ExploreWidget( const Maze3D & maze_, const QImage & floorTexture_
 	setFocusPolicy( Qt::ClickFocus );	// so the widget can accept keyboard input
 }
 
+
+/* make sure the cursor is no longer hidden when this widget is detroyed
+ */
 ExploreWidget::~ExploreWidget()
 {
 	stopHidingCursor();
@@ -92,8 +91,7 @@ void ExploreWidget::initializeGL()
 }
 
 
-/* wait until the next frame has to be rendered,
- * compute the placement of the player based on current movement,
+/* compute the placement of the player based on current movement,
  * and then draw the textured maze
  */
 void ExploreWidget::paintGL()
@@ -134,7 +132,8 @@ void ExploreWidget::paintGL()
 
 	// if this widget has focus then
 	// draw instructions on how to close this widget or force it to release the mouse
-	if ( hasFocus() ) {
+	if ( hasFocus() )
+	{
 		QKeySequence quitSequence( Qt::Key_Escape );
 		QString quitInstructions = QString( "Press %1 to quit exploring" ).arg( quitSequence.toString() );
 		QKeySequence releaseFocusSequence( release_focus_button );

@@ -3,13 +3,8 @@
    File        : edit2DMaze.cpp
    Author      : Jacob Enget  (jacob.enget@gmail.com)
 
-   Description : Main function for reading in, editing, and
-   				 writing out a file for a 2D maze
-   				 
-   				 
-   				 command line syntax:
-   				 
-   				 edit2DMaze [ 2DMazeFileName ]
+   Description : contains the definition for EditWidget,
+				 which is used for opening, editing, and saving a 2D maze
 */
 
 #include <assert.h>
@@ -30,12 +25,13 @@ EditWidget::EditWidget( QWidget * parent /* = NULL */ ) :
 	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba ), parent ),
 	maze( 450, 450 ),
 	drawLineToCursor( false ),
-	lineWidth( 1.0 ) {
-
+	lineWidth( 1.0 )
+{
 	setMouseTracking( true );	// so the widget can listen to mouse movement when a mouse button isn't down
 	setFocusPolicy( Qt::ClickFocus );	// so the widget can accept keyboard input
 	setContextMenuPolicy( Qt::ActionsContextMenu );	// so the widget can respond to context menu requests with it list of actions
 }
+
 
 void EditWidget::initializeGL()
 {
@@ -54,8 +50,8 @@ void EditWidget::initializeGL()
 }
 
 
-/* change size handler...keeps the user from altering the size of the window
- * (the window will snap back to its original size when the user tries to resize it)
+/* change size handler...
+ * recomputes the orthographic projection so the maze stays square but is as large in the window as possible
  */
 void EditWidget::resizeGL( int width, int height )
 {
@@ -83,6 +79,7 @@ void EditWidget::resizeGL( int width, int height )
 
 	updateGL();
 }
+
 
 /* color in the background, draw and color the 2-D maze,
  * and draw a small "you will be here" triangle
@@ -140,13 +137,16 @@ void EditWidget::paintGL()
 	glFlush();
 }
 
+
+/* consecutive mouse presses allow the user to add walls to the maze
+ */
 void EditWidget::mousePressEvent( QMouseEvent * event )
 {
 	//if the user pressed the left mouse button
 	if( ( ( event->button() & Qt::LeftButton ) != 0 ) )
 	{
 		mouseCursor = convertPointToCoordinatesSystem( event->x(), event->y() );
-		//if the user had thier pen down
+		//if the user had their pen down
 		if( drawLineToCursor )
 		{
 			//then you know to create a new line for this maze
@@ -162,6 +162,10 @@ void EditWidget::mousePressEvent( QMouseEvent * event )
 	}
 }
 
+
+/* update the cached position of the last place where moust was
+ * and if the redraw the window if the user is creating a wall
+ */
 void EditWidget::mouseMoveEvent( QMouseEvent * event )
 {
 	mouseCursor = convertPointToCoordinatesSystem( event->x(), event->y() );
@@ -172,9 +176,8 @@ void EditWidget::mouseMoveEvent( QMouseEvent * event )
 }
 
 
-/* keyboard input handler....responds to
- * the quit_button (defined in the header) for quiting
- * and allows the user to lift up their drawing pen
+/* keyboard input handler....
+ * allows the user to lift up their drawing pen
  */
 void EditWidget::keyPressEvent( QKeyEvent * event )
 {
@@ -243,8 +246,7 @@ bool EditWidget::saveMaze( const QString & fileName )
 }
 
 
-/* erase all work done on the maze
- * leaving just the bounding walls
+/* erase all walls in the maze except the bounding walls
  */
 void EditWidget::setMazeToDefault()
 {
@@ -260,6 +262,8 @@ void EditWidget::setMazeToDefault()
  */ 
 Point2D EditWidget::convertPointToCoordinatesSystem( int x, int y )
 {
+
+	// local class just here to encapsulate some useful (but only needed here) matrix related functions
 	class MatrixUtil
 	{
 		public:

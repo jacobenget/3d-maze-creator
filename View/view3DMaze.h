@@ -3,13 +3,8 @@
    File        : view3DMaze.h
    Author      : Jacob Enget  (jacob.enget@gmail.com)
 
-   Description : Main function for viewing a 3D-maze
-   				 after applying textures to its walls and floors
-   				 
-   				 
-   				 command line syntax:
-   				 
-   				 view3DMaze [ 3DMazeFileName [ floorTexture.ppm [ wallTexture.ppm ] ] ]
+   Description : contains the declaration for ViewWidget,
+				 which is used for viewing a 3D maze from afar
 */
 
 
@@ -38,19 +33,39 @@ class ViewWidget : public QGLWidget
 
 	protected:
 		virtual void initializeGL();
+
+		// change size handler...
+		// lets the user resize the window
+		// but keeps everything in the correct perspective
 		virtual void resizeGL( int width, int height );
+
+		// draw the 3-D maze
 		virtual void paintGL();
+
+		// takes a mouse button input and determines
+		// what state of interaction the system will be in
+		// ( translating vs. rotating vs. scaling vs. ... )
 		virtual void mousePressEvent( QMouseEvent * event );
+
 		virtual void mouseReleaseEvent( QMouseEvent * event );
+
+		// this function does all the work in tranforming mouse movement into
+		// a translation/rotation/scaling of the model
 		virtual void mouseMoveEvent( QMouseEvent * event );
-		virtual void keyPressEvent( QKeyEvent * event );
 
 	public slots:
+		// update to display the given maze with the images speficifed
 		void displayMaze3D( const Maze3D * maze3D, const QImage & floorTexture, const QImage & wallsTexture );
+
+		// resets the transformation and projection of the model
 		void reinitializeView();
 
 	private:
+		// computes the viewing frustum
+		// given the current state of affairs
 		void computeFrustum();
+
+		// reinitialize the maze's translation, scale, and rotation
 		void initializeTransformation();
 
 		GLuint floorTextureNumber;

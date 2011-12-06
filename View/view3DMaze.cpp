@@ -3,13 +3,8 @@
    File        : view3DMaze.cpp
    Author      : Jacob Enget  (jacob.enget@gmail.com)
 
-   Description : Main function for viewing a 3D-maze
-   				 after applying textures to its walls and floors
-   				 
-   				 
-   				 command line syntax:
-   				 
-   				 view3DMaze [ 3DMazeFileName [ floorTexture.ppm [ wallTexture.ppm ] ] ]
+   Description : contains the definition for ViewWidget,
+				 which is used for viewing a 3D maze from afar
 */
 
 #include <assert.h>
@@ -35,6 +30,9 @@ const double ViewWidget::initial_z_coord_of_camera = 1000.0;
 const int exit_success = 0;
 const Qt::Key quit_button = Qt::Key_Q;
 
+
+/* construct a ViewWidget with a default translation
+ */
 ViewWidget::ViewWidget( QWidget * parent /* = NULL */ ) :
 	QGLWidget( QGLFormat( QGL::DoubleBuffer | QGL::Rgba | QGL::DepthBuffer ), parent ),
 	floorTextureNumber( 0 ),
@@ -71,7 +69,6 @@ void ViewWidget::initializeGL()
 
 
 /* draw the 3-D maze
- * ( all transformations are computed outside (prior to) this function )
  */
 void ViewWidget::paintGL()
 {
@@ -97,23 +94,6 @@ void ViewWidget::paintGL()
 	}
 	
 	glFlush();
-}
-
-/* keyboard input handler....responds to 
- * the quit_button (defined in the header) for quiting
- * and allows the user to lift up their drawing pen
- */
-void ViewWidget::keyPressEvent( QKeyEvent * event )
-{
-	Qt::Key pressedKey = static_cast< Qt::Key >( event->key() );
-	if ( pressedKey == quit_button )
-	{
-		exit( exit_success );
-	}
-	else
-	{
-		QGLWidget::keyPressEvent( event );
-	}
 }
 
 
@@ -307,7 +287,8 @@ void ViewWidget::computeFrustum()
 	gluLookAt( 0.0, 0.0, stateOfProjection.getCameraZPosition(), 0.0, 0.0, 0.0, 0.0, 1.0, 0.0 );
 }
 
-/* reinitialized the maze's translation, scale, and rotation
+
+/* reinitialize the maze's translation, scale, and rotation
  */
 void ViewWidget::initializeTransformation()
 {

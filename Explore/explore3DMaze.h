@@ -3,13 +3,9 @@
    File        : explore3DMaze.h
    Author      : Jacob Enget  (jacob.enget@gmail.com)
 
-   Description : Main function for exploring a 3D-maze
-   				 after applying textures to its walls and floors
-   				 
-   				 
-   				 command line syntax:
-   				 
-   				 explore3DMaze [ 3DMazeFileName [ floorTexture.ppm [ wallTexture.ppm ] ] ]
+   Description : contains the declaration for ExploreWidget,
+				 which is used for exploring a 3D maze in first-person view
+				 with basic WASD move controls and mouse-look
 */
 
 
@@ -43,16 +39,40 @@ class ExploreWidget : public QGLWidget
 
 	protected:
 		virtual void initializeGL();
+
+		// change size handler...
+		// lets the user resize  the window
+		// but keeps everything in the correct perspective
 		virtual void resizeGL( int width, int height );
+
+		// compute the placement of the player based on current movement,
+		// and then draw the textured maze
 		virtual void paintGL();
+
+		// rotates the world based on user input with the mouse
 		virtual void mouseMoveEvent( QMouseEvent * event );
+
+		// keyboard input handler for pressing a key
+		// responds to key commands for movement,
+		// changing perspective, and quiting
 		virtual void keyPressEvent( QKeyEvent * event );
+
+		// keyboard input handler for letting up on a key
+		// responds to key commands for movement,
+		// and changing perspective
 		virtual void keyReleaseEvent( QKeyEvent * event );
+
+		// hide the cursor when focus is received, show the cursor otherwise
 		virtual void focusInEvent( QFocusEvent * event );
 
 	private:
+		// computes the viewing frustum
+		// given the current state of affairs
 		void computeFrustum();
+
+		// hide the cursor, even if it's already hidden
 		void hideCursor();
+		// undo all the times we've hid the cursor
 		void stopHidingCursor();
 
 		const Maze3D & maze;
