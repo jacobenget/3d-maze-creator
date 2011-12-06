@@ -285,6 +285,7 @@ void MainWindow::replaceWallTexture()
 void MainWindow::exploreMazeInFirstPerson()
 {
 	QDialog exploreDialog( this, Qt::WindowMaximizeButtonHint );
+	exploreDialog.setWindowTitle( "First-Person Preview" );
 
 	QVBoxLayout * layout = new QVBoxLayout;
 	ExploreWidget * exploreWidget = new ExploreWidget( maze3D, floorTexture, wallsTexture );
