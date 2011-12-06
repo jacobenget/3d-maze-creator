@@ -45,8 +45,8 @@ void EditWidget::initializeGL()
 	glGetFloatv( GL_LINE_WIDTH_RANGE, sizes );
 	glGetFloatv( GL_LINE_WIDTH_GRANULARITY, &step );
 	int stepsAvailable = ( int ) ( ( sizes[1] - sizes[0] ) / step );
-	//lineWidth will be about halfway between the thinnest and thickest possible line
-	lineWidth = sizes[0] + ( step ) * ( stepsAvailable / 2 );
+	//lineWidth will be about one fourth of the way between the thinnest and thickest possible line
+	lineWidth = sizes[0] + ( step ) * ( stepsAvailable / 4 );
 }
 
 
