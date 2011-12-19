@@ -34,6 +34,9 @@ class Vector2D
 		/* returns the length of this vector
 		 */
 		double length() const;
+		double lengthSquared() const;
+
+		void normalize();
 		
 		/* returns the dot product of two vectors
 		 */

@@ -41,52 +41,17 @@ Wall::Wall( const Wall & rhs ) :
 void Wall::fitToLine( const LineSegment2D & line, int widthOfWall, int heightOfWall, int widthOfTexture, int heightOfTexture )
 {
 	//four corners of the base rectangle need to be calculated
-	
-	/* first calculations are to determine the coordinates of the corner
-	 * that is on the same side as line.getP1(), and the line from this 
-	 * to line.getP1() is 90 degrees CCW from the passed in line
-	 * 
-	 * so we will calculate changeInX and changeInY
-	 * such that this corner is ( line.getP1().getX() + changeInx, line.getP1().getY() + changeInY)
-	 */
-	double changeInX;
-	double changeInY;
-	
-	double slopeOfLine = line.slope();
-	
-	//if the line is horizontal
-	if( slopeOfLine == 0 )
-	{
-		changeInX = 0;
-		changeInY = widthOfWall / 2.0;
-		if( ( line.getP1().getX() - line.getP2().getX() ) > 0 )
-		{
-			changeInY *= -1.0;
-		}
-	}
-	//if the line is vertical
-	else if ( slopeOfLine == numeric_limits<double>::max() )
-	{
-		changeInX = -widthOfWall / 2.0;
-		if( ( line.getP1().getY() - line.getP2().getY() ) > 0 )
-		{
-			changeInX *= -1.0;
-		}
-		
-		changeInY = 0;
-	}
-	//else if the line is neither horizontal or vertical
-	else
-	{
-		double perpendicularSlope = -1 / slopeOfLine;
-		changeInX = ( ( widthOfWall/2.0 ) * sqrt( 1 / ( 1.0 + perpendicularSlope*perpendicularSlope ) ) );
-		if( ( line.getP1().getY() - line.getP2().getY() ) < 0 )
-		{
-			changeInX *= -1;
-		}
-		changeInY = perpendicularSlope * changeInX;
-	}
-	
+	Vector2D lineVector( line );
+	// rotate the lineVector by -90 degrees counter-clockwise
+	Vector2D perpendicularToLineVector( lineVector.getY(), -lineVector.getX() );
+
+	// set the length of the perpendicular vector to be half the wall width
+	perpendicularToLineVector.normalize();
+	perpendicularToLineVector = perpendicularToLineVector * ( widthOfWall / 2.0 );
+
+	double changeInX = perpendicularToLineVector.getX();
+	double changeInY = perpendicularToLineVector.getY();
+
 	const Point2D & p1 = line.getP1();
 	const Point2D & p2 = line.getP2();
 	
@@ -142,28 +107,25 @@ bool Wall::isInsideMe( const Point2D & point ) const
 {
 	bool pointIsInside = false;
 
-	//point is inside this wall iff the point is to the right of every vertical
-	//wall, as one walks along each wall with the inside to their right
-	LineSegment2D bottomOfFrontEnd( getFrontEnd().getP4(), getFrontEnd().getP1() );
-	
-	if( bottomOfFrontEnd.isToTheRightOfMe( point ) )
-	{
-		LineSegment2D bottomOfRightSide( getRightSide().getP4(), getRightSide().getP1() );
-		
-		if( bottomOfRightSide.isToTheRightOfMe( point ) )
-		{
-			LineSegment2D bottomOfBackEnd( getBackEnd().getP4(), getBackEnd().getP1() );
-			
-			if( bottomOfBackEnd.isToTheRightOfMe( point ) )
-			{
-				LineSegment2D bottomOfLeftSide( getLeftSide().getP4(), getLeftSide().getP1() );
-				
-				if( bottomOfLeftSide.isToTheRightOfMe( point ) )
-				{
-					pointIsInside = true;
-				}	
-			}	
-		}
+	// express the vector from the given point to the first corner in the top quad as a linear combinarion
+	// of the vectors that represent the sides of the top quad that involve the first corner
+	// and if coefficients are both in the range [0,1] then the point is inside the box
+	Point2D localOrigin( getTop().getP1() );
+	Point2D localUp( getTop().getP2() );
+	Point2D localRight( getTop().getP4() );
+
+	Vector2D localUpVector( localUp.getX() - localOrigin.getX(), localUp.getY() - localOrigin.getY() );
+	Vector2D localRightVector( localRight.getX() - localOrigin.getX(), localRight.getY() - localOrigin.getY() );
+
+	Vector2D localOriginToPointVector( point.getX() - localOrigin.getX(), point.getY() - localOrigin.getY() );
+
+	double upDotProduct = localUpVector.dotProduct( localOriginToPointVector );
+	bool inRangeOfUpVector = ( upDotProduct >= 0 ) && ( upDotProduct <= ( localUpVector.lengthSquared() ) );
+
+	if ( inRangeOfUpVector ) {
+
+		double rightDotProduct = localRightVector.dotProduct( localOriginToPointVector );
+		pointIsInside = ( rightDotProduct >= 0 ) && ( rightDotProduct <= ( localRightVector.lengthSquared() ) );
 	}
 	
 	return pointIsInside;
@@ -180,14 +142,14 @@ Vector2D Wall::resolveCollision( const LineSegment2D & line ) const
 	try
 	{
 		Vector2D wallHit = getCollisionSurface( line );
-		double wallLength = wallHit.length();
-		if( wallLength > 0.0 )
+		double wallLengthSquared = wallHit.lengthSquared();
+		if( wallLengthSquared > 0.0 )
 		{
 			/* coefficient of projection of vector x onto vector y is:
 			 *   ( y dot x ) / (|y| ^ 2)
 			 */
 			Vector2D initialTrajectory = line;
-			resolvedDirection = wallHit * ( ( wallHit.dotProduct( initialTrajectory ) ) / ( wallLength * wallLength ) );
+			resolvedDirection = wallHit * ( ( wallHit.dotProduct( initialTrajectory ) ) / wallLengthSquared );
 		}
 		//else, if the side of the wall that we've hit has zero length
 		else
@@ -232,86 +194,73 @@ Vector2D Wall::getCollisionSurface( const LineSegment2D & line ) const throw( Wa
 	Point2D source = line.getP1();
 	LineSegment2D closestLine;
 	LineSegment2D currentSegment;
+	double currentDistanceSquared;
 	
 	/* we will now look at all 4 vertical sides of this wall
 	 * and choose the side that one would collid first with 
 	 * while traveling in a path from line.getP1() to line.getP2()
 	 */
-	double currentSourceToWallDistance = numeric_limits<double>::max();
+	double minSourceToWallDistanceSquared = numeric_limits<double>::max();
+
+	/* util class for determining the squared distance from the start of one line segment
+	 * to its intersection with another line segment
+	 */
+	class collisionUtil {
+	public:
+		static double distanceToLineSegmentCollision( const LineSegment2D source, const LineSegment2D & checkLineSegment ) {
+			try
+			{
+				//try to get the point of intersection
+				const Point2D intersection( source.getIntersection( checkLineSegment ) );
+				Vector2D sourceToIntersection( intersection.getX() - source.getP1().getX(), intersection.getY() - source.getP1().getY() );
+
+				return sourceToIntersection.lengthSquared();
+			}
+			catch ( LineSegment2D::LinesDontIntersectOnce & ignore )
+			{
+				return numeric_limits<double>::max();
+			}
+		}
+	};
 	
 	//see if one collides with the leftSide while traveling in the direction of the given line
 	currentSegment = LineSegment2D( getLeftSide().getP4(), getLeftSide().getP1() );
-	try
+	currentDistanceSquared = collisionUtil::distanceToLineSegmentCollision( line, currentSegment );
+	if ( currentDistanceSquared < minSourceToWallDistanceSquared )
 	{
-		//try to get the point of intersection
-		const Point2D intersection( line.getIntersection( currentSegment ) );
-		Vector2D sourceToIntersection( intersection.getX() - source.getX(), intersection.getY() - source.getY() );
-		
-		//if this point is closer to the point of origination than any previous wall
-		if( sourceToIntersection.length() < currentSourceToWallDistance )
-		{
-			closestLine = currentSegment;
-			currentSourceToWallDistance = sourceToIntersection.length();
-		}
+		closestLine = currentSegment;
+		minSourceToWallDistanceSquared = currentDistanceSquared;
 	}
-	catch ( LineSegment2D::LinesDontIntersectOnce & ignore ) { }
-	
 
 	//see if one collides with the rightSide while traveling in the direction of the given line
 	currentSegment = LineSegment2D( getRightSide().getP4(), getRightSide().getP1() );
-	try
+	currentDistanceSquared = collisionUtil::distanceToLineSegmentCollision( line, currentSegment );
+	if ( currentDistanceSquared < minSourceToWallDistanceSquared )
 	{
-		//try to get the point of intersection
-		const Point2D intersection( line.getIntersection( currentSegment ) );
-		Vector2D sourceToIntersection( intersection.getX() - source.getX(), intersection.getY() - source.getY() );
-		
-		//if this point is closer to the point of origination than any previous wall
-		if( sourceToIntersection.length() < currentSourceToWallDistance )
-		{
-			closestLine = currentSegment;
-			currentSourceToWallDistance = sourceToIntersection.length();
-		}
+		closestLine = currentSegment;
+		minSourceToWallDistanceSquared = currentDistanceSquared;
 	}
-	catch ( LineSegment2D::LinesDontIntersectOnce & ignore ) { }
-	
 
 	//see if one collides with the frontEnd while traveling in the direction of the given line
 	currentSegment = LineSegment2D( getFrontEnd().getP4(), getFrontEnd().getP1() );
-	try
+	currentDistanceSquared = collisionUtil::distanceToLineSegmentCollision( line, currentSegment );
+	if ( currentDistanceSquared < minSourceToWallDistanceSquared )
 	{
-		//try to get the point of intersection
-		const Point2D intersection = line.getIntersection( currentSegment );
-		Vector2D sourceToIntersection( intersection.getX() - source.getX(), intersection.getY() - source.getY() );
-		
-		//if this point is closer to the point of origination than any previous wall
-		if( sourceToIntersection.length() < currentSourceToWallDistance )
-		{
-			closestLine = currentSegment;
-			currentSourceToWallDistance = sourceToIntersection.length();
-		}
+		closestLine = currentSegment;
+		minSourceToWallDistanceSquared = currentDistanceSquared;
 	}
-	catch ( LineSegment2D::LinesDontIntersectOnce & ignore )  { }
-	
 
 	//see if one collides with the BackEnd while traveling in the direction of the given line
 	currentSegment = LineSegment2D( getBackEnd().getP4(), getBackEnd().getP1() );
-	try
+	currentDistanceSquared = collisionUtil::distanceToLineSegmentCollision( line, currentSegment );
+	if ( currentDistanceSquared < minSourceToWallDistanceSquared )
 	{
-		//try to get the point of intersection
-		const Point2D intersection( line.getIntersection( currentSegment ) );
-		Vector2D sourceToIntersection( intersection.getX() - source.getX(), intersection.getY() - source.getY() );
-		
-		//if this point is closer to the point of origination than any previous wall
-		if( sourceToIntersection.length() < currentSourceToWallDistance )
-		{
-			closestLine = currentSegment;
-			currentSourceToWallDistance = sourceToIntersection.length();
-		}
+		closestLine = currentSegment;
+		minSourceToWallDistanceSquared = currentDistanceSquared;
 	}
-	catch ( LineSegment2D::LinesDontIntersectOnce & ignore ) { }
 	
 	//if no intersection was found
-	if( !( currentSourceToWallDistance < numeric_limits<double>::max() ) )
+	if( !( minSourceToWallDistanceSquared < numeric_limits<double>::max() ) )
 	{
 		throw Wall::NoCollisionDetected();
 	}

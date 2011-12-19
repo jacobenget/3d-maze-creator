@@ -55,8 +55,25 @@ const Vector2D Vector2D::operator*( double scalar ) const
  */
 double Vector2D::length() const
 {
-	double sumOfSquares = ( getX() * getX() ) + ( getY() * getY() ); 
-	return sqrt( sumOfSquares );
+	return sqrt( lengthSquared() );
+}
+
+
+/* returns the length of this vector
+ */
+double Vector2D::lengthSquared() const
+{
+	return ( getX() * getX() ) + ( getY() * getY() );
+}
+
+
+/* noramlizes the vector to its length is 1
+ */
+void Vector2D::normalize()
+{
+	double vectorLength = length();
+	x /= vectorLength;
+	y /= vectorLength;
 }
 
 

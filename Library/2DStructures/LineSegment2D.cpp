@@ -9,6 +9,7 @@
 
 
 #include "LineSegment2D.h"
+#include "Vector2D.h"
 
 using namespace std;
 
@@ -43,27 +44,16 @@ const LineSegment2D & LineSegment2D::operator=( const LineSegment2D & rhs )
  */
 bool LineSegment2D::isToTheRightOfMe( const Point2D & point ) const
 {
-	//values for this line
-	double deltaX = getP2().getX() - getP1().getX(); 
-	double deltaY = getP2().getY() - getP1().getY(); 
-	
-	//if this line is vertical
-	if( deltaX == 0.0 )
-	{
-		//return true iff this line points up and the point is to the right
-		//OR the line points down and the point is to the left
-		return ( ( deltaY * ( point.getX() - getP1().getX() ) ) > 0.0 );
-	}
-	else
-	{
-		//the y coordinate of the point of intersection between
-		//this line, and a vertical line through the point
-		double yCoord = getP1().getY() + ( deltaY/deltaX ) * ( point.getX() - getP1().getX() );
-		
-		//return true iff the line is "above" the point and pointing east
-		//OR the line is "below" the point and pointing west
-		return ( ( yCoord - point.getY() ) * ( deltaX ) > 0.0 ); 
-	}
+	// the cross product of the vector for this line and the vector from the start of this line and the point
+	// points in the direction of the negative z-axis if and only if the point is to the right of the line
+
+	// so compute the z-coordinate of the cross product and check if it's greater than zero
+	Vector2D lineVector( *this );
+	Vector2D pointToLineVector( point.getX() - getP1().getX(), point.getY() - getP1().getY() );
+
+	double zCoordOfCrossProduct = ( ( lineVector.getX() * pointToLineVector.getY() ) - ( lineVector.getY() * pointToLineVector.getX() ) );
+
+	return ( zCoordOfCrossProduct < 0 );
 }
 
 
@@ -124,31 +114,21 @@ double LineSegment2D::slope() const
  */
 Point2D LineSegment2D::getIntersectionExtended( const LineSegment2D & line ) const throw( LineSegment2D::LinesDontIntersectOnce & )
 {
+	Vector2D otherLineVector( line );
+	Vector2D perpendicularVector( p1.getY() - p2.getY(), p2.getX() - p1.getX() );
+
+	double dotProduct = otherLineVector.dotProduct( perpendicularVector );
+
 	//first, check to make sure the lines aren't parallel
-	if( this->slope() == line.slope() )
+	if( dotProduct == 0.0 )
 	{
 		throw LinesDontIntersectOnce();
 	}
-	
-	//now, MATH time!
-	double x1 = this->getP1().getX();
-	double x2 = this->getP2().getX();
-	double x3 = line.getP1().getX();
-	double x4 = line.getP2().getX();
-	
-	double y1 = this->getP1().getY();
-	double y2 = this->getP2().getY();
-	double y3 = line.getP1().getY();
-	double y4 = line.getP2().getY();
-	
-	double d1 = determinant( x1, y1, x2, y2 );
-	double d2 = determinant( x3, y3, x4, y4 ); 
-	double d3 = determinant( x1 - x2, y1 - y2, x3 - x4, y3 - y4 );
-	
-	double x = determinant( d1, x1 - x2, d2, x3 - x4 ) / d3;
-	double y = determinant( d1, y1 - y2, d2, y3 - y4 ) / d3;
-	
-	return Point2D( x, y );
+
+	Vector2D firstLineToSecond( p1.getX() - line.getP1().getX(), p1.getY() - line.getP1().getY() );
+	double t = ( firstLineToSecond.dotProduct( perpendicularVector ) ) / dotProduct;
+
+	return Point2D( line.getP1().getX() + ( otherLineVector.getX() * t ), line.getP1().getY() + ( otherLineVector.getY() * t ) );
 }
 
 
