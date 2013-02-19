@@ -11,6 +11,8 @@
 
 #include "explore3DMaze.h"
 
+#include <GL/glu.h>		// this will need to be smarter for Mac builds (possibly by including <OpenGL/glu.h> instead
+
 const int exit_success = 0;
 
 const QColor ExploreWidget::bkgrnd_color( 179, 179, 230 );
