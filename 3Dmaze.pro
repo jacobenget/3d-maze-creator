@@ -9,6 +9,8 @@ CONFIG   += warn_on
 
 RESOURCES = application.qrc
 
+DEFINES += NOMINMAX
+
 TARGET = 3Dmaze
 TEMPLATE = app
 INCLUDEPATH += Library/2DStructures/ \
