@@ -7,6 +7,7 @@
    				 the state of transformation of some object
 */
 
+#include <limits>
 
 #include "TransformationMatrix.h"
 
@@ -171,7 +172,7 @@ GLdouble TransformationMatrix::get( int row, int column ) const
 	}
 	else
 	{
-		return NAN;
+		return std::numeric_limits<double>::signaling_NaN();
 	}
 }
 
